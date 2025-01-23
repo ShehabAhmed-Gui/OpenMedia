@@ -189,7 +189,7 @@ ApplicationWindow {
             property: "opacity"
             to: 0.40
             duration: 500
-            easing.type: Easing.InOutQuad
+            easing.type: Easing.InCurve
         }
     }
 
@@ -199,8 +199,8 @@ ApplicationWindow {
         NumberAnimation {
             target: playlist
             property: "width"
-            to: 300
-            duration: 300
+            to: 250
+            duration: 250
             easing.type: Easing.InCurve
         }
     }
@@ -212,7 +212,7 @@ ApplicationWindow {
             target: playlist
             property: "width"
             to: 0
-            duration: 300
+            duration: 250
             easing.type: Easing.InCurve
         }
     }
