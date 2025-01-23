@@ -14,17 +14,19 @@ using namespace std;
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+    app.setWindowIcon(QIcon(":/images/icon.png"));
 
     QQmlApplicationEngine engine;
 
+    FilesManager *filesManager = new FilesManager();
+
+
     qmlRegisterSingletonInstance<SettingsManager>("com.qt.openmedia", 1, 0, "AppSettings", new SettingsManager(&app));
-    qmlRegisterSingletonInstance<FilesManager>("com.qt.openmedia", 1, 0, "AppManager", new FilesManager(&app));
+    qmlRegisterSingletonInstance<FilesManager>("com.qt.openmedia", 1, 0, "AppManager", filesManager);
 
     qmlRegisterType<ListModel>("com.qt.openmedia", 1, 0, "MVideos");
 
     engine.load(QUrl(QStringLiteral("qrc:/ui/qml/Main.qml")));
-
-    app.setWindowIcon(QIcon(":/images/icon.png"));
 
     if (engine.rootObjects().isEmpty())
         return -1;

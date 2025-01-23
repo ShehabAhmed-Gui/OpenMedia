@@ -78,22 +78,40 @@ Rectangle {
         }
     }
 
-    Text {
-        id: videoName
-        text: name
-        color: "#D8D2C2"
+    Flickable {
+        width: parent.width
+        height: videoName.font.pixelSize + 5
 
-        width: parent.width - 10
+        contentWidth: videoName.contentWidth
+        contentHeight: height
 
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.left: playVideo.right
-        anchors.leftMargin: 7
+        anchors {
+            verticalCenter: parent.verticalCenter
+            horizontalCenter: parent.horizontalCenter
+            left: playVideo.right
+            leftMargin: 7
+        }
 
-        font.pixelSize: 13
-        font.weight: 400
+        clip: true
 
-        wrapMode: Text.WordWrap
+        Text {
+            id: videoName
+            text: name
+            color: "#D8D2C2"
+
+            width: parent.width - 10
+            height: parent.height
+
+            anchors {
+                verticalCenter: parent.verticalCenter
+                horizontalCenter: parent.horizontalCenter
+            }
+
+            font.pixelSize: 13
+            font.weight: 400
+
+            wrapMode: Text.NoWrap
+        }
     }
 
     CustomButton {

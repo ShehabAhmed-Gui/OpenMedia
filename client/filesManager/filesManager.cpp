@@ -1,13 +1,14 @@
 #include "filesManager.h"
 
-FilesManager::FilesManager(QObject *parent)
-    : QObject{parent}, supportedVids("*.mp4 *.wav *.mkv"), settings{SettingsManager()}
+FilesManager::FilesManager() :
+    supportedVids("*.mp4 *.wav *.mkv"), settings{SettingsManager()}
 {
     m_defaultPath = settings.getSetting("VideosPath", "lastSelectedPath").toString().remove("file://");
 }
 
 FilesManager::~FilesManager()
 {
+    delete dialog;
 }
 
 // QString FilesManager::selectFile()
@@ -35,7 +36,8 @@ FilesManager::~FilesManager()
 
 QVector<QString> FilesManager::selectFiles()
 {
-    selectedFiles = m_dialog.getOpenFileNames(nullptr, "Select A Bunch Of Videos", m_defaultPath, supportedVids);
+    dialog = new QFileDialog();
+    selectedFiles = dialog->getOpenFileNames(nullptr, "Select A Bunch Of Videos", m_defaultPath, supportedVids);
 
     if (!selectedFiles.isEmpty()) {
         const QString &videosPath = selectedFiles.last();

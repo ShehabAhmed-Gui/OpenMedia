@@ -13,7 +13,7 @@ class FilesManager : public QObject
     Q_OBJECT
 public:
 
-    explicit FilesManager(QObject *parent = 0);
+    explicit FilesManager();
     ~FilesManager();
 
     // Q_INVOKABLE QString selectFile();
@@ -21,7 +21,7 @@ public:
     Q_INVOKABLE QVector<QString> selectFiles();
 
 private:
-    QFileDialog m_dialog;
+    QFileDialog *dialog;
 
     QString m_defaultPath;
     QString supportedVids;

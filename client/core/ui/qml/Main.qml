@@ -14,8 +14,10 @@ ApplicationWindow {
 
     property alias videoState: video.playbackState
 
-    width: 1200
-    height: 780
+    flags: Qt.Window
+
+    width: 1500
+    height: 800
     minimumHeight: 460
     minimumWidth: 640
     visible: true
@@ -140,7 +142,7 @@ ApplicationWindow {
 
     PlayList {
         id: playlist
-        width: 300
+        width: 250
         height: parent.height - bottomControls.height - 20
 
         anchors.right: parent.right

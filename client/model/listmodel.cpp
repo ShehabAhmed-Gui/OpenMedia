@@ -105,25 +105,28 @@ void ListModel::clearPlaylist()
 QString ListModel::getPrevious(const qsizetype &index) const
 {
     currentIndex = index;
-    if (currentIndex <= 0) {
+
+    //Set index to last list item if prev called on first item
+    if (currentIndex <= 0 || currentIndex > m_data.size()) {
         currentIndex = m_data.size();
     }
 
-    if (currentIndex > 0) {
-        return m_data.at(currentIndex - 1);
-    }
-    return QString();
+    return m_data.at(currentIndex - 1);
 }
 
 QString ListModel::getNext(const qsizetype &index) const
 {
     currentIndex = index;
-    if (currentIndex >= m_data.size() - 1) {
-        currentIndex = -1;
+
+    //return empty string if index = invalid index
+    if (currentIndex < 0) {
+        return QString();
     }
 
-    if (currentIndex >= -1) {
-        return m_data.at(currentIndex + 1);
+    currentIndex++;
+    if (currentIndex >= m_data.size()) {
+        currentIndex = 0;
     }
-    return QString();
+
+    return m_data.at(currentIndex);
 }
