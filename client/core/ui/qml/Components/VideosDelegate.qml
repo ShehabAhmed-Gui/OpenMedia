@@ -85,6 +85,9 @@ Rectangle {
         contentWidth: videoName.contentWidth
         contentHeight: height
 
+        contentY: 0
+        contentX: 0
+
         anchors {
             verticalCenter: parent.verticalCenter
             horizontalCenter: parent.horizontalCenter
@@ -99,12 +102,12 @@ Rectangle {
             text: name
             color: "#D8D2C2"
 
-            width: parent.width - 10
+            width: videoName.contentWidth
             height: parent.height
 
             anchors {
+                left: parent.left
                 verticalCenter: parent.verticalCenter
-                horizontalCenter: parent.horizontalCenter
             }
 
             font.pixelSize: 13

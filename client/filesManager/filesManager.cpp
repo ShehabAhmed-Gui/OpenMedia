@@ -37,6 +37,7 @@ FilesManager::~FilesManager()
 QVector<QString> FilesManager::selectFiles()
 {
     dialog = new QFileDialog();
+    dialog->setOptions(QFileDialog::ReadOnly);
     selectedFiles = dialog->getOpenFileNames(nullptr, "Select A Bunch Of Videos", m_defaultPath, supportedVids);
 
     if (!selectedFiles.isEmpty()) {

@@ -39,9 +39,12 @@ QVariant ListModel::data(const QModelIndex &index, int role) const
         return QVariant();
     }
 
+    //Return video name without exetenstion
+    QString videoName = QFileInfo(m_data.at(row)).completeBaseName();
+
     switch(role) {
         case name:
-            return m_data.at(row).split('/').last().split('.').first();
+            return videoName;
             break;
         case path:
             return m_data.at(row);
