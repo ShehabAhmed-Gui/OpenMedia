@@ -8,7 +8,7 @@ Rectangle {
     anchors.horizontalCenter: parent? parent.horizontalCenter : undefined
     width: parent? parent.width - 20 : 20
 
-    property bool isCurrentlyPlaying: video.source.toString() === path
+    property bool isCurrentlyPlaying: video.source.toString().toLowerCase() === path.toLowerCase()
 
     function setCurrentIndex() {
         listView.currentIndex = index
@@ -27,17 +27,19 @@ Rectangle {
 
     Connections {
         target: listView
-        enabled: isCurrentlyPlaying
         function onPlayNext() {
-            setCurrentIndex()
+            if (isCurrentlyPlaying) {
+                setCurrentIndex();
+            }
         }
     }
 
     Connections {
         target: listView
-        enabled: isCurrentlyPlaying
         function onPlayPrevious() {
-            setCurrentIndex()
+            if (isCurrentlyPlaying) {
+                setCurrentIndex();
+            }
         }
     }
 

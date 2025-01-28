@@ -80,7 +80,7 @@ void ListModel::loadVideos()
     currentIndex = 0;
     QVector<QString> selected = filesManager.selectFiles();
 
-      for (const auto& item : selected) {
+      for (const auto& item : std::as_const(selected)) {
         if (!m_data.contains(item)) {
             beginInsertRows(QModelIndex(), m_data.size(), m_data.size());
                 m_data.append(item);
@@ -107,21 +107,21 @@ void ListModel::clearPlaylist()
 
 QString ListModel::getPrevious(const qsizetype &index) const
 {
-    currentIndex = index;
-
-    //Set index to last list item if prev called on first item
-    if (currentIndex <= 0 || currentIndex > m_data.size()) {
-        currentIndex = m_data.size();
+    if (index <= 0) {
+        currentIndex = m_data.size() - 1;
+    } else if (index < m_data.size()) {
+        currentIndex = index - 1;
+    } else {
+        currentIndex = m_data.size() - 1;
     }
 
-    return m_data.at(currentIndex - 1);
+    return m_data.at(currentIndex);
 }
 
 QString ListModel::getNext(const qsizetype &index) const
 {
     currentIndex = index;
 
-    //return empty string if index = invalid index
     if (currentIndex < 0) {
         return QString();
     }
