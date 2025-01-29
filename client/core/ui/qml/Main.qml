@@ -10,6 +10,7 @@ import "Components"
 ApplicationWindow {
     id: root
     readonly property bool isMobileTarget: Qt.platform.os === "android" || Qt.platform.os === "ios"
+    readonly property string os: Qt.platform.os
     readonly property bool soundMuted: AppSettings.getSetting("Audio", "muted")
 
     property alias videoState: video.playbackState

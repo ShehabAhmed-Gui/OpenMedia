@@ -1,6 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file>images/appIcon.png</file>
         <file>images/loop_off.png</file>
         <file>images/loop_on.png</file>
         <file>images/low-volume.png</file>
@@ -12,29 +11,21 @@
         <file>ui/qml/Main.qml</file>
         <file>ui/qml/Components/VideoPlayerType.qml</file>
         <file>ui/qml/Controls/BottomControls.qml</file>
-        <file>images/video_cursor.png</file>
-        <file>images/svg/Loop_Icon.svg</file>
-        <file>images/svg/Loop_Playlist.svg</file>
-        <file>images/svg/Next_Icon.svg</file>
-        <file>images/svg/Play_Icon.svg</file>
-        <file>images/svg/Playlist_Active.svg</file>
-        <file>images/svg/Playlist_Icon.svg</file>
-        <file>images/svg/Previous_Icon.svg</file>
-        <file>images/svg/Rate_Icon.svg</file>
-        <file>images/svg/Settings_Icon.svg</file>
-        <file>images/svg/Shuffle_Active.svg</file>
-        <file>images/svg/Shuffle_Icon.svg</file>
-        <file>images/svg/Single_Loop.svg</file>
         <file>images/svg/Stop_Icon.svg</file>
-        <file>images/svg/Loop_Icon_Dark.svg</file>
         <file>images/svg/Next_Icon_Dark.svg</file>
-        <file>images/svg/Playlist_Icon_Dark.svg</file>
         <file>images/svg/Previous_Icon_Dark.svg</file>
-        <file>images/svg/Shuffle_Icon_Dark.svg</file>
         <file>images/svg/Rate_Icon_Dark.svg</file>
         <file>ui/qml/Components/CustomSliderType.qml</file>
-        <file>ui/qml/Components/RegularButtonType.qml</file>
         <file>ui/qml/Controls/AudioControls.qml</file>
         <file>ui/qml/Controls/PlaybackSpeed.qml</file>
+        <file>ui/qml/Components/CustomButton.qml</file>
+        <file>ui/qml/Components/ToolTipType.qml</file>
+        <file>ui/qml/Controls/PlayList.qml</file>
+        <file>ui/qml/Components/VideosDelegate.qml</file>
+        <file>images/svg/playlist.svg</file>
+        <file>images/svg/plus.svg</file>
+        <file>images/svg/play.svg</file>
+        <file>images/svg/trash.svg</file>
+        <file>images/icon.png</file>
     </qresource>
 </RCC>
