@@ -66,10 +66,15 @@ ApplicationWindow {
 
     VideoPlayerType {
         id: video
+        anchors {
+            fill: parent
+            rightMargin: 4
+            leftMargin: 4
+            bottomMargin: 4
+        }
+
         width: 500
         height: 500
-
-        anchors.fill: parent
         volume: 0.3
         source: AppSettings.getSetting("Video", "video")
 
