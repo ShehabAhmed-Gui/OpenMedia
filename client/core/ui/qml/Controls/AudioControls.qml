@@ -27,11 +27,11 @@ Item {
                 toolTipText: video.muted? "Unmute" : "Mute"
             }
 
-              iconSource: ( video.muted || volumeLevel === 0? "qrc:/images/mute.png" : volumeLevel < 70
-                   ? "qrc:/images/low-volume.png"
-                   : "qrc:/images/volume-high.png")
-            iconWidth: 18
-            iconHeight: 18
+              iconSource: ( video.muted || volumeLevel === 0? "qrc:/images/svg/muted.svg" : volumeLevel < 70
+                   ? "qrc:/images/svg/volume_low.svg"
+                   : "qrc:/images/svg/volume_high.svg")
+            iconWidth: 13
+            iconHeight: 13
 
             MouseArea {
                 anchors.fill: parent

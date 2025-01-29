@@ -166,9 +166,9 @@ Rectangle {
                 id: skipBackward
                 buttonRadius: 0
 
-                iconSource: "qrc:/images/svg/Previous_Icon_Dark.svg"
-                iconWidth: 18
-                iconHeight: 18
+                iconSource: "qrc:/images/svg/previous.svg"
+                iconWidth: 16
+                iconHeight: 16
 
                 ToolTipType {
                     toolTipText: "Skip To Previous Video"
@@ -186,7 +186,9 @@ Rectangle {
 
             CustomButton {
                 id: seekBackward
-                iconSource: "qrc:/images/rewind-backward.png"
+                iconSource: "qrc:/images/backward_10s.png"
+                iconWidth: 17
+                iconHeight: 17
 
                 ToolTipType {
                     toolTipText: "Seek 10s backward"
@@ -201,9 +203,9 @@ Rectangle {
 
             CustomButton {
                 id: startStopButton
-                iconSource: video.playbackState === MediaPlayer.PlayingState? "qrc:/images/svg/Stop_Icon.svg" : "qrc:/images/play-button.png"
-                iconWidth: 33
-                iconHeight: 33
+                iconSource: video.playbackState === MediaPlayer.PlayingState? "qrc:/images/svg/stop.svg" : "qrc:/images/svg/play.svg"
+                iconWidth: 30
+                iconHeight: 30
 
                 ToolTipType {
                     toolTipText: video.playbackState === MediaPlayer.PlayingState? "Stop" : "Play"
@@ -220,7 +222,9 @@ Rectangle {
 
             CustomButton {
                 id: seekForward
-                iconSource: "qrc:/images/seek-forward.png"
+                iconSource: "qrc:/images/forward_10s.png"
+                iconWidth: 17
+                iconHeight: 17
 
                 ToolTipType {
                     toolTipText: "Seek 10s forward"
@@ -236,9 +240,9 @@ Rectangle {
             CustomButton {
                 id: skipForward
                 buttonRadius: 0
-                iconSource: "qrc:/images/svg/Next_Icon_Dark.svg"
-                iconWidth: 18
-                iconHeight: 18
+                iconSource: "qrc:/images/svg/next.svg"
+                iconWidth: 16
+                iconHeight: 16
 
                 ToolTipType {
                     toolTipText: "Skip To Next Video"
@@ -287,6 +291,8 @@ Rectangle {
             backgroundColor: "transparent"
 
             iconSource: "qrc:/images/svg/playlist.svg"
+            iconWidth: 16
+            iconHeight: 16
 
             ToolTipType {
                 toolTipText: playlist.width > 0? "Hide Playlist" : "Open Playlist"

@@ -18,7 +18,7 @@ Item {
             visible: showPlaybackSpeedIcon
             Layout.minimumHeight: 13
             Layout.minimumWidth: 13
-            source: "qrc:/images/svg/Rate_Icon_Dark.svg"
+            source: "qrc:/images/svg/playback_rate.svg"
         }
 
         CustomSliderType {
