@@ -44,5 +44,8 @@ QVariant SettingsManager::getSetting(const QString &group, QString key, const QV
 
     if (key == "muted") return value.toBool();
 
-    return value;
+    if (!value.isNull()) {
+        return value;
+    }
+    return QVariant();
 }

@@ -29,10 +29,6 @@ ApplicationWindow {
 
         // load settings
         bottomControls.audioType.setMuted(soundMuted)
-        video.volume = AppSettings.getSetting("Audio", "volume") / 100
-
-        video.source = Qt.url(AppSettings.getSetting("Video", "video"))
-        video.seek(AppSettings.getSetting("Video", "position") * 1000)
     }
 
     onClosing: {
@@ -74,13 +70,33 @@ ApplicationWindow {
         height: 500
 
         anchors.fill: parent
-        source: AppSettings.getSetting("Video", "video")
         volume: 0.3
+        source: AppSettings.getSetting("Video", "video")
 
         cursorWidth: 40
         cursorHeight: 40
 
-        Component.onCompleted: afkTimer.start()
+        onSeekableChanged: {
+            if (seekable) {
+
+                //Fixes a bug on windows
+                Qt.callLater(() => {
+                    video.position = AppSettings.getSetting("Video", "position") * 1000;
+                });
+            }
+        }
+
+        Component.onCompleted: {
+            afkTimer.start()
+
+            video.volume = AppSettings.getSetting("Audio", "volume") / 100
+
+            video.source = Qt.url(AppSettings.getSetting("Video", "video"))
+
+            //Set loaded video last-saved frame instead of black screen
+            video.play()
+            video.pause()
+        }
 
         onSourceChanged: AppSettings.saveSettings("Video", "video", source.toString())
 

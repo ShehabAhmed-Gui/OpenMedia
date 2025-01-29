@@ -6,12 +6,10 @@ Video {
     id: video
     fillMode: VideoOutput.Stretch
 
-    property string videoSource
     property int cursorWidth: 20
     property int cursorHeight: 20
 
     width: 500
     height: 500
     focus: true
-    source: videoSource
 }
