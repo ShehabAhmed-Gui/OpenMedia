@@ -4,7 +4,7 @@
 ListModel::ListModel(QObject *parent) : QAbstractListModel{parent}
 {
     beginInsertRows(QModelIndex(), m_data.size(), m_data.size());
-        for (const QString &item : settings.getKeys("Playlist")) {
+        for (QString &item : settings.getKeys("Playlist")) {
             const QString &playlistItem = settings.getSetting("Playlist", item).toString();
             m_data.append(playlistItem);
         }
@@ -100,13 +100,17 @@ void ListModel::deleteItem(const qsizetype &index)
 
 void ListModel::clearPlaylist()
 {
-    beginRemoveRows (QModelIndex(), m_data.first().toInt(), m_data.size());
+    beginRemoveRows (QModelIndex(), 0, m_data.size() - 1);
         m_data.clear();
     endRemoveRows();
 }
 
 QString ListModel::getPrevious(const qsizetype &index) const
 {
+    if (m_data.isEmpty()) {
+        return QString();
+    }
+
     if (index <= 0) {
         currentIndex = m_data.size() - 1;
     } else if (index < m_data.size()) {
@@ -120,16 +124,10 @@ QString ListModel::getPrevious(const qsizetype &index) const
 
 QString ListModel::getNext(const qsizetype &index) const
 {
-    currentIndex = index;
-
-    if (currentIndex < 0) {
+    if (m_data.isEmpty()) {
         return QString();
     }
 
-    currentIndex++;
-    if (currentIndex >= m_data.size()) {
-        currentIndex = 0;
-    }
-
-    return m_data.at(currentIndex);
+    qsizetype nextIndex = (index + 1) % m_data.size();
+    return m_data.at(nextIndex);
 }

@@ -56,7 +56,7 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
 
         iconSource:  isCurrentlyPlaying && videoState === MediaPlayer.PlayingState
-            ? "qrc:/images/svg/stop.svg"
+            ? "qrc:/images/svg/pause.svg"
             : "qrc:/images/svg/play.svg"
 
         iconWidth: 18
