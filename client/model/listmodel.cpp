@@ -22,8 +22,6 @@ ListModel::~ListModel()
     }
 }
 
-qsizetype ListModel::currentIndex = 0;
-
 int ListModel::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
@@ -77,7 +75,6 @@ bool ListModel::setData(const QModelIndex &index, const QVariant &value, int rol
 
 void ListModel::loadVideos()
 {
-    currentIndex = 0;
     QVector<QString> selected = filesManager.selectFiles();
 
       for (const auto& item : std::as_const(selected)) {
@@ -105,29 +102,36 @@ void ListModel::clearPlaylist()
     endRemoveRows();
 }
 
-QString ListModel::getPrevious(const qsizetype &index) const
+QString ListModel::getPrevious()
 {
     if (m_data.isEmpty()) {
         return QString();
     }
 
-    if (index <= 0) {
-        currentIndex = m_data.size() - 1;
-    } else if (index < m_data.size()) {
-        currentIndex = index - 1;
-    } else {
-        currentIndex = m_data.size() - 1;
-    }
+    m_currentIndex = m_currentIndex <= 0 ? m_data.size() - 1 : m_currentIndex - 1;
 
-    return m_data.at(currentIndex);
+    return m_data.at(m_currentIndex);
 }
 
-QString ListModel::getNext(const qsizetype &index) const
+QString ListModel::getNext()
 {
     if (m_data.isEmpty()) {
         return QString();
     }
 
-    qsizetype nextIndex = (index + 1) % m_data.size();
-    return m_data.at(nextIndex);
+    m_currentIndex = (m_currentIndex + 1) % m_data.size();
+    return m_data.at(m_currentIndex);
+}
+
+qsizetype ListModel::currentIndex() const
+{
+    return m_currentIndex;
+}
+
+void ListModel::setCurrentIndex(qsizetype newCurrentIndex)
+{
+    if (m_currentIndex == newCurrentIndex)
+        return;
+    m_currentIndex = newCurrentIndex;
+    emit currentIndexChanged();
 }

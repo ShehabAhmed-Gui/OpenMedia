@@ -101,7 +101,7 @@ Rectangle {
             }
 
             onPlayNext: {
-                video.source = Qt.url(listModel.getNext(currentIndex))
+                video.source = Qt.url(listModel.getNext())
                 if (os === "linux") {
                     Qt.callLater(() => {
                         video.play()
@@ -110,7 +110,7 @@ Rectangle {
             }
 
             onPlayPrevious: {
-                video.source = Qt.url(listModel.getPrevious(currentIndex))
+                video.source = Qt.url(listModel.getPrevious())
                 if (os === "linux") {
                     Qt.callLater(() => {
                         video.play()

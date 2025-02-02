@@ -10,6 +10,9 @@
 class ListModel : public QAbstractListModel
 {
     Q_OBJECT
+
+    Q_PROPERTY(qsizetype currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged FINAL)
+
 public:
     ListModel(QObject *parent = 0);
 
@@ -30,14 +33,20 @@ public:
     Q_INVOKABLE void loadVideos();
     Q_INVOKABLE void deleteItem(const qsizetype &index);
     Q_INVOKABLE void clearPlaylist();
-    Q_INVOKABLE QString getPrevious(const qsizetype &index) const;
-    Q_INVOKABLE QString getNext(const qsizetype &index) const;
+    Q_INVOKABLE QString getPrevious();
+    Q_INVOKABLE QString getNext();
+
+    qsizetype currentIndex() const;
+    void setCurrentIndex(qsizetype newCurrentIndex);
+
+signals:
+    void currentIndexChanged();
 
 private:
     QVector<QString> m_data;
     FilesManager filesManager;
     SettingsManager settings;
-    static qsizetype currentIndex;
+    qsizetype m_currentIndex;
 };
 
 #endif // LISTMODEL_H

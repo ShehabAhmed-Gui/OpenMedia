@@ -12,6 +12,7 @@ Rectangle {
 
     function setCurrentIndex() {
         listView.currentIndex = index
+        listModel.currentIndex = index
     }
 
     Component.onCompleted: {
@@ -19,7 +20,7 @@ Rectangle {
         Qt.callLater(() => {
             if (isCurrentlyPlaying) {
                 if (listView) {
-                    listView.currentIndex = index;
+                    setCurrentIndex();
                 }
             }
         });
@@ -69,7 +70,8 @@ Rectangle {
             cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
 
             onClicked: {
-                listView.currentIndex = index
+                setCurrentIndex();
+
                 if (isCurrentlyPlaying && video.playbackState === MediaPlayer.PlayingState) {
                     video.pause()
                 } else {
