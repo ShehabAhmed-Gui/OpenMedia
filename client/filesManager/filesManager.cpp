@@ -1,7 +1,7 @@
 #include "filesManager.h"
 
 FilesManager::FilesManager() :
-    supportedVids("*.mp4 *.wav *.mkv"), settings{SettingsManager()}
+    supportedVids("*.mp4 *.wav *.mkv *.webm"), settings{SettingsManager()}
 {
     m_defaultPath = settings.getSetting("VideosPath", "lastSelectedPath").toString().remove("file://");
 }

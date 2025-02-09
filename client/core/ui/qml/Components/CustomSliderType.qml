@@ -4,6 +4,7 @@ import QtQuick.Controls.Fusion
 
 Slider {
     id: customSlider
+    live: true
 
     property bool enableGradiant: true
     property bool enableHandler: false
