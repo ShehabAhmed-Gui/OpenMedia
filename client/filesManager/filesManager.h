@@ -5,6 +5,9 @@
 #include <QFileDialog>
 #include <QStringList>
 #include <QDebug>
+#include <QCoreApplication>
+#include <QStandardPaths>
+#include <QProcess>
 
 #include "../settings/settingsManager.h"
 
@@ -12,13 +15,17 @@ class FilesManager : public QObject
 {
     Q_OBJECT
 public:
-
-    explicit FilesManager();
+    explicit FilesManager(QObject *parent = nullptr);
     ~FilesManager();
 
-    // Q_INVOKABLE QString selectFile();
+    void addFile(QString path);
 
     Q_INVOKABLE QVector<QString> selectFiles();
+
+    void setupDesktopFile();
+
+signals:
+    void videoPassedAsArg(QString path);
 
 private:
     QFileDialog *dialog;

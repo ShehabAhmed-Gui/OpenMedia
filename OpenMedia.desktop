@@ -1,9 +1,0 @@
-[Desktop Entry]
-Name=Birdo
-Comment=Playes videos with Birdo
-Exec=Birdo %f
-Terminal=false
-Type=Application
-MimeType=video/mp4;video/wav
-Categories=AudioVideo;video;
-Name[en_US]=OpenMedia.desktop

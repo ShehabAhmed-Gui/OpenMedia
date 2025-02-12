@@ -43,6 +43,22 @@ ApplicationWindow {
         AppSettings.saveSettings("Video", "video", video.source.toString())
     }
 
+    Connections {
+        id: playVideoFromArg
+        target: AppManager
+
+        function onVideoPassedAsArg (arg) {
+            video.stop();
+            video.source = Qt.url(arg);
+            video.play();
+
+            Qt.callLater(() => {
+                console.log("Resetting video position...");
+                video.position = 0;
+            });
+        }
+    }
+
     Timer {
         id: hoverTimer
         interval: 3000
@@ -253,5 +269,4 @@ ApplicationWindow {
             break;
         }
     }
-
 }

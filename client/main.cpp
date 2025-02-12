@@ -15,7 +15,8 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
 
-    FilesManager *filesManager = new FilesManager();
+    FilesManager *filesManager = new FilesManager(&app);
+    filesManager->setupDesktopFile();
 
     qmlRegisterSingletonInstance<SettingsManager>("com.qt.openmedia", 1, 0, "AppSettings", new SettingsManager(&app));
     qmlRegisterSingletonInstance<FilesManager>("com.qt.openmedia", 1, 0, "AppManager", filesManager);
@@ -25,6 +26,12 @@ int main(int argc, char *argv[])
     app.setWindowIcon(QIcon(":/images/icon.ico"));
 
     engine.load(QUrl(QStringLiteral("qrc:/ui/qml/Main.qml")));
+
+        // Parse args
+    if (QCoreApplication::arguments().size() > 1) {
+        const QString videoPath = QCoreApplication::arguments().last();
+        filesManager->addFile(const_cast<QString &>(videoPath));
+    }
 
     if (engine.rootObjects().isEmpty())
         return -1;
