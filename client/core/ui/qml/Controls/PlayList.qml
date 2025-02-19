@@ -100,6 +100,8 @@ Rectangle {
             delegate: VideosDelegate {
             }
 
+            contentHeight: listModel.count * (delegate.height + spacing) + 10
+
             onPlayNext: {
                 video.source = Qt.url(listModel.getNext())
                 if (os === "linux") {
@@ -122,5 +124,11 @@ Rectangle {
         MVideos {
             id: listModel
         }
+
+        Rectangle {
+        width: listView.width
+        height: 5  // This is the space at the bottom of the list
+        color: "transparent"  // Invisible space
+    }
     }
 }

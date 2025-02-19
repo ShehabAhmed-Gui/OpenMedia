@@ -28,6 +28,6 @@
         <file>images/backward_10s.png</file>
         <file>images/forward_10s.png</file>
         <file>images/svg/pause.svg</file>
-        <file>images/icon.ico</file>
+        <file>images/icon.png</file>
     </qresource>
 </RCC>

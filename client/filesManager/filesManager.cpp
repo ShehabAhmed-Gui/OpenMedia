@@ -13,9 +13,9 @@ FilesManager::~FilesManager()
 
 void FilesManager::addFile(QString path)
 {
-    #ifdef Q_OS_LINUX
-        path = "file://" + path;
-    #endif
+#ifdef Q_OS_LINUX
+    path = "file://" + path;
+#endif
 
     emit videoPassedAsArg(path);
 }
@@ -45,7 +45,8 @@ QVector<QString> FilesManager::selectFiles()
 
 void FilesManager::setupDesktopFile()
 {
-    const QString appFile = QCoreApplication::applicationFilePath();
+    const QString appFile = QCoreApplication::applicationDirPath() + "/OpenMedia.sh";
+    const QString appIcon = QCoreApplication::applicationDirPath() + "/../icon/icon.png";
     const QString targetDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/applications";
     const QString targetFile = targetDir + "/OpenMedia.desktop";
 
@@ -59,15 +60,15 @@ void FilesManager::setupDesktopFile()
 
         const QString fileContent = QString(
             "[Desktop Entry]\n"
-            "Name=OpenMedia\n"
+            "Name[en_US]=OpenMedia\n"
             "Comment=Play videos with OpenMedia\n"
-            "Exec=%1 %%f\n"
+            "Exec=%1\n"
+            "Icon=%2\n"
             "Terminal=false\n"
             "Type=Application\n"
             "MimeType=video/mp4;video/wav;\n"
             "Categories=AudioVideo;Video;\n"
-            "Name[en_US]=OpenMedia\n"
-        ).arg(appFile);
+        ).arg(appFile, appIcon);
 
         desktopFile.write(fileContent.toUtf8());
         // Set permissions

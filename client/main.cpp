@@ -16,20 +16,22 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
 
     FilesManager *filesManager = new FilesManager(&app);
+#ifdef Q_OS_LINUX
     filesManager->setupDesktopFile();
+#endif
 
     qmlRegisterSingletonInstance<SettingsManager>("com.qt.openmedia", 1, 0, "AppSettings", new SettingsManager(&app));
     qmlRegisterSingletonInstance<FilesManager>("com.qt.openmedia", 1, 0, "AppManager", filesManager);
 
     qmlRegisterType<ListModel>("com.qt.openmedia", 1, 0, "MVideos");
 
-    app.setWindowIcon(QIcon(":/images/icon.ico"));
+    app.setWindowIcon(QIcon(":/images/icon.png"));
 
     engine.load(QUrl(QStringLiteral("qrc:/ui/qml/Main.qml")));
 
-        // Parse args
+    // Parse args
     if (QCoreApplication::arguments().size() > 1) {
-        const QString videoPath = QCoreApplication::arguments().last();
+        QString videoPath = QCoreApplication::arguments().last();
         filesManager->addFile(const_cast<QString &>(videoPath));
     }
 

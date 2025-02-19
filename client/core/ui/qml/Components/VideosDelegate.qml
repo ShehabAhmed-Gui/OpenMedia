@@ -6,7 +6,14 @@ Rectangle {
     id: root
     color: "#1A1A1D"
     anchors.horizontalCenter: parent? parent.horizontalCenter : undefined
+
     width: parent? parent.width - 20 : 20
+    height: 40
+
+    border.color: isCurrentlyPlaying? "#04471c" : "transparent"
+    border.width: 0.5
+
+    radius: 11
 
     property bool isCurrentlyPlaying: video.source.toString().toLowerCase() === path.toLowerCase()
 
@@ -43,12 +50,6 @@ Rectangle {
             }
         }
     }
-
-    border.color: isCurrentlyPlaying? "#04471c" : "transparent"
-    border.width: 0.5
-
-    height: 40
-    radius: 11
 
     CustomButton {
         id: playVideo
