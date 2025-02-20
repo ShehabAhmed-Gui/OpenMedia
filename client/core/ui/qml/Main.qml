@@ -49,7 +49,9 @@ ApplicationWindow {
         target: video
 
         function onPlaying () {
-            root.title = "OpenMedia - " + VideosDelegate.name
+        var fileUrl = video.source.toString();
+        var fileName = fileUrl.split("/").pop();  // Extract filename from path
+        root.title = "OpenMedia -  " + decodeURIComponent(fileName);
         }
     }
 
