@@ -11,6 +11,7 @@ Rectangle {
     radius: 8
     border.color: "#685752"
 
+    property alias playlistModel: listModel
     property alias listView: listView
 
     MouseArea {
@@ -126,9 +127,10 @@ Rectangle {
         }
 
         Rectangle {
-        width: listView.width
-        height: 5  // This is the space at the bottom of the list
-        color: "transparent"  // Invisible space
-    }
+            id: sapcer
+            width: listView.width
+            height: 5
+            color: "transparent"
+        }
     }
 }

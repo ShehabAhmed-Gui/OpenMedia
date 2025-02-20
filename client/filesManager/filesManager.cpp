@@ -11,7 +11,7 @@ FilesManager::~FilesManager()
     delete dialog;
 }
 
-void FilesManager::addFile(QString path)
+void FilesManager::playFile(QString path)
 {
 #ifdef Q_OS_LINUX
     path = "file://" + path;

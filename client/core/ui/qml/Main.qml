@@ -43,17 +43,26 @@ ApplicationWindow {
         AppSettings.saveSettings("Video", "video", video.source.toString())
     }
 
+
+    Connections {
+        id: titleChanger
+        target: video
+
+        function onPlaying () {
+            root.title = "OpenMedia - " + VideosDelegate.name
+        }
+    }
+
     Connections {
         id: playVideoFromArg
         target: AppManager
 
         function onVideoPassedAsArg (arg) {
+            hidePlaylist.start()
             video.stop();
-            video.source = Qt.url(arg);
-            video.play();
-
             Qt.callLater(() => {
-                console.log("Resetting video position...");
+                video.source = Qt.url(arg);
+                video.play();
                 video.position = 0;
             });
         }

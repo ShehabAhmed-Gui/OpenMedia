@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
     // Parse args
     if (QCoreApplication::arguments().size() > 1) {
         QString videoPath = QCoreApplication::arguments().last();
-        filesManager->addFile(const_cast<QString &>(videoPath));
+        filesManager->playFile(const_cast<QString &>(videoPath));
     }
 
     if (engine.rootObjects().isEmpty())

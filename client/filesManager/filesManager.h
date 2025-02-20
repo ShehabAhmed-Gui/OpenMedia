@@ -18,7 +18,7 @@ public:
     explicit FilesManager(QObject *parent = nullptr);
     ~FilesManager();
 
-    void addFile(QString path);
+    void playFile(QString path);
 
     Q_INVOKABLE QVector<QString> selectFiles();
 
