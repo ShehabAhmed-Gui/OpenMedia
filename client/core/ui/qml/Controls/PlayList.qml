@@ -37,7 +37,7 @@ Rectangle {
                 iconSource: "qrc:/images/svg/trash.svg"
 
                 ToolTipType {
-                    toolTipText: "Remove all videos"
+                    toolTipText: qsTr("Remove all videos")
                 }
 
                 MouseArea {
@@ -49,7 +49,7 @@ Rectangle {
 
             Text {
                 id: playlistTitle
-                text: "Videos Playlist"
+                text: qsTr("Videos Playlist")
 
                 color: "#ffffff"
                 font.pixelSize: 13

@@ -23,7 +23,7 @@ ToolTip {
         anchors.centerIn: backgroud
 
         color: "#ffffff"
-        text: toolTipText
+        text: qsTr(toolTipText)
 
         font.pixelSize: 11
         font.kerning: true

@@ -104,7 +104,7 @@ Rectangle {
             Connections {
                 target: video
                 function onPositionChanged() {
-                    // playing next video once current video ends
+                    // Playing next video once current video ends
                     if (video.position === video.duration){
                         playlist.listView.playNext()
                     }

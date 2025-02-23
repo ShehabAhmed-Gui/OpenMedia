@@ -60,19 +60,19 @@ void FilesManager::setupDesktopFile()
 
         const QString fileContent = QString(
             "[Desktop Entry]\n"
-            "Name[en_US]=OpenMedia\n"
+            "Name=OpenMedia\n"
             "Comment=Play videos with OpenMedia\n"
-            "Exec=%1\n"
-            "Icon=%2\n"
+            "Exec=" + appFile + "\n"
+            "Icon=" + appIcon + "\n"
             "Terminal=false\n"
             "Type=Application\n"
-            "MimeType=video/mp4;video/wav;\n"
-            "Categories=AudioVideo;Video;\n"
+            "MimeType=video/mp4;audio/wav\n"
+            "Categories=AudioVideo;Video;"
         ).arg(appFile, appIcon);
 
         desktopFile.write(fileContent.toUtf8());
         // Set permissions
-        desktopFile.setPermissions(targetFile, QFile::ReadUser | QFile::WriteUser);
+        QFile::setPermissions(targetFile, QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
         desktopFile.close();
 
         // Update desktop database

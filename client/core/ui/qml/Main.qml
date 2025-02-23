@@ -22,23 +22,23 @@ ApplicationWindow {
     minimumHeight: 460
     minimumWidth: 640
     visible: true
-    title: qsTr("OpenMedia")
+    title: "OpenMedia"
     color: "#000000"
     Component.onCompleted: {
         console.debug("Application Started")
 
-        // load settings
+        // Load settings
         bottomControls.audioType.setMuted(soundMuted)
     }
 
     onClosing: {
         console.log("Writing Settings. Settings saved in:", AppSettings.getSettLocation())
 
-        //save audio settings
+        // Save audio settings
         AppSettings.saveSettings("Audio", "volume", (video.volume * 100).toFixed());
         AppSettings.saveSettings("Audio", "muted", video.muted);
 
-        //save video settings
+        // Save video settings
         AppSettings.saveSettings("Video", "position", video.position / 1000)
         AppSettings.saveSettings("Video", "video", video.source.toString())
     }
@@ -95,9 +95,7 @@ ApplicationWindow {
         id: video
         anchors {
             fill: parent
-            rightMargin: 4
-            leftMargin: 4
-            bottomMargin: 4
+            margins: 3
         }
 
         width: 500
@@ -110,8 +108,7 @@ ApplicationWindow {
 
         onSeekableChanged: {
             if (seekable) {
-
-                //Fixes a bug on windows
+                // Fixes a bug on windows
                 Qt.callLater(() => {
                     video.position = AppSettings.getSetting("Video", "position") * 1000;
                 });
@@ -125,7 +122,7 @@ ApplicationWindow {
 
             video.source = Qt.url(AppSettings.getSetting("Video", "video"))
 
-            //Set loaded video last-saved frame instead of black screen
+            // Set loaded video last-saved frame instead of black screen
             video.play()
             video.pause()
         }
