@@ -46,9 +46,11 @@ QVector<QString> FilesManager::selectFiles()
 void FilesManager::setupDesktopFile()
 {
     const QString appFile = QCoreApplication::applicationDirPath() + "/OpenMedia.sh";
-    const QString appIcon = QCoreApplication::applicationDirPath() + "/../icon/icon.png";
+    const QString appIcon = QCoreApplication::applicationDirPath() + "/../icon/OpenMedia.png";
     const QString targetDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/applications";
     const QString targetFile = targetDir + "/OpenMedia.desktop";
+
+    // Escape spaces in paths
 
     QDir().mkpath(targetDir);
 
@@ -56,14 +58,14 @@ void FilesManager::setupDesktopFile()
     QFile desktopFile(targetFile);
 
     if (desktopFile.open(QIODevice::WriteOnly)) {
-        // Write desktop file
 
+        // Write desktop file
         const QString fileContent = QString(
             "[Desktop Entry]\n"
-            "Name=OpenMedia\n"
+            "Name[en_US]=OpenMedia\n"
             "Comment=Play videos with OpenMedia\n"
-            "Exec=" + appFile + "\n"
-            "Icon=" + appIcon + "\n"
+            "Exec=\"%1\"\n"
+            "Icon=%2\n"
             "Terminal=false\n"
             "Type=Application\n"
             "MimeType=video/mp4;audio/wav\n"
@@ -72,7 +74,7 @@ void FilesManager::setupDesktopFile()
 
         desktopFile.write(fileContent.toUtf8());
         // Set permissions
-        QFile::setPermissions(targetFile, QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
+        desktopFile.setPermissions(targetFile, QFile::WriteUser | QFile::ReadUser);
         desktopFile.close();
 
         // Update desktop database
