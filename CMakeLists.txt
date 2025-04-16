@@ -29,6 +29,7 @@ qt_standard_project_setup()
 qt6_add_resources(SOURCES "client/core/resources.qrc")
 
 qt_add_executable(OpenMedia
+    WIN32
     ${SOURCES}
     ${HEADERS}
 )

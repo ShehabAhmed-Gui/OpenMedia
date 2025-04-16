@@ -105,20 +105,16 @@ Rectangle {
 
             onPlayNext: {
                 video.source = Qt.url(listModel.getNext())
-                if (os === "linux") {
-                    Qt.callLater(() => {
-                        video.play()
-                    });
-                } else if (os === "windows") { video.play() }
+                Qt.callLater(() => {
+                    video.play()
+                });
             }
 
             onPlayPrevious: {
                 video.source = Qt.url(listModel.getPrevious())
-                if (os === "linux") {
-                    Qt.callLater(() => {
-                        video.play()
-                    });
-                } else if (os === "windows") { video.play() }
+                Qt.callLater(() => {
+                    video.play()
+                });
             }
         }
 
