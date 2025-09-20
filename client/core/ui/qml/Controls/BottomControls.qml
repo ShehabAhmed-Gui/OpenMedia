@@ -3,8 +3,6 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtMultimedia
 
-import com.qt.openmedia
-
 import "../Components"
 
 Rectangle {
@@ -23,11 +21,11 @@ Rectangle {
     property alias bottomMA: bottomControlsMouseArea
 
     function seekBackward() {
-        video.seek(video.position -= 10000)
+        mediaPlayer.position = mediaPlayer.position -= 10000
     }
 
     function seekForward() {
-        video.seek(video.position += 10000)
+        mediaPlayer.position = mediaPlayer.position += 10000
     }
 
     function formatTime(seconds) {
@@ -54,7 +52,7 @@ Rectangle {
         target: videoSlider
         function onMoved() {
             if (userChangingSlider) {
-                video.seek(videoSlider.value * 1000)
+                mediaPlayer.position = videoSlider.value * 1000
             }
         }
     }
@@ -83,7 +81,7 @@ Rectangle {
         CustomSliderType {
             id: videoSlider
 
-            property int videoDuration: video.duration / 1000
+            property int videoDuration: mediaPlayer.duration / 1000
 
             sliderWidth: parent.width - 30
             sliderHeight: 7
@@ -98,19 +96,19 @@ Rectangle {
             onValueChanged: {
                 userChangingSlider = true
                 userInteractionTimer.restart()
-                video.focus = true
+                mediaPlayer.videoOutput.focus = true
             }
 
             Connections {
-                target: video
+                target: mediaPlayer
                 function onPositionChanged() {
-                    // Playing next video once current video ends
-                    if (video.position === video.duration){
+                    // Playing next mediaPlayer once current mediaPlayer ends
+                    if (mediaPlayer.position === mediaPlayer.duration){
                         playlist.listView.playNext()
                     }
 
                     if (!userChangingSlider) {
-                        videoSlider.value = video.position / 1000
+                        videoSlider.value = mediaPlayer.position / 1000
                     }
                 }
             }
@@ -171,7 +169,7 @@ Rectangle {
                 iconHeight: 16
 
                 ToolTipType {
-                    toolTipText: "Skip To Previous Video"
+                    toolTipText: "Skip To Previous mediaPlayer"
                 }
 
                 MouseArea {
@@ -203,12 +201,12 @@ Rectangle {
 
             CustomButton {
                 id: startStopButton
-                iconSource: video.playbackState === MediaPlayer.PlayingState? "qrc:/images/svg/stop.svg" : "qrc:/images/svg/play.svg"
+                iconSource: mediaPlayer.playbackState === MediaPlayer.PlayingState? "qrc:/images/svg/stop.svg" : "qrc:/images/svg/play.svg"
                 iconWidth: 30
                 iconHeight: 30
 
                 ToolTipType {
-                    toolTipText: video.playbackState === MediaPlayer.PlayingState? "Stop" : "Play"
+                    toolTipText: mediaPlayer.playbackState === MediaPlayer.PlayingState? "Stop" : "Play"
                 }
 
                 onHoverBackgroundColor: "transparent"
@@ -220,7 +218,7 @@ Rectangle {
                     onEntered: cursorShape = Qt.PointingHandCursor
                     onExited: cursorShape = Qt.ArrowCursor
 
-                    onClicked: video.playbackState === MediaPlayer.PlayingState? video.pause() : video.play()
+                    onClicked: mediaPlayer.playbackState === MediaPlayer.PlayingState? mediaPlayer.pause() : mediaPlayer.play()
                 }
             }
 
@@ -249,7 +247,7 @@ Rectangle {
                 iconHeight: 16
 
                 ToolTipType {
-                    toolTipText: "Skip To Next Video"
+                    toolTipText: "Skip To Next mediaPlayer"
                 }
 
                 MouseArea {
@@ -286,6 +284,30 @@ Rectangle {
             Layout.minimumWidth: 30
             Layout.maximumWidth: 30
         }
+
+        CustomButton {
+            id: playBackMetaDataBtn
+            Layout.alignment: Qt.AlignVCenter
+            buttonRadius: 5
+
+            backgroundColor: "transparent"
+
+            iconSource: "qrc:/images/svg/subtitles.svg"
+            iconWidth: 23
+            iconHeight: 23
+
+            MouseArea {
+                anchors.fill: parent
+
+                onClicked: subtitlePopup.visible = !subtitlePopup.visible
+            }
+        }
+
+        Item {
+            Layout.minimumWidth: 10
+            Layout.maximumWidth: 10
+        }
+
 
         CustomButton {
             id: playListBtn

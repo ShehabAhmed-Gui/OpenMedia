@@ -37,7 +37,7 @@ Item {
             stepSize: 0.5
             value: 1.0
 
-            onValueChanged: video.playbackRate = value
+            onValueChanged: mediaPlayer.playbackRate = value
 
             Layout.fillWidth: true
         }

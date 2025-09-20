@@ -9,18 +9,19 @@
 #include <QStandardPaths>
 #include <QProcess>
 
-#include "../settings/settingsManager.h"
+#include "settings.h"
 
 class FilesManager : public QObject
 {
     Q_OBJECT
 public:
-    explicit FilesManager(QObject *parent = nullptr);
+    explicit FilesManager(const QSharedPointer<Settings> settings,
+                          QObject *parent = nullptr);
     ~FilesManager();
 
     void playFile(QString path);
 
-    Q_INVOKABLE QVector<QString> selectFiles();
+    QVector<QString> selectFiles();
 
     void setupDesktopFile();
 
@@ -30,11 +31,12 @@ signals:
 private:
     QFileDialog *dialog;
 
+    QSharedPointer<Settings> m_settings;
+
     QString m_defaultPath;
     QString supportedVids;
     QString m_selected;
 
-    SettingsManager settings;
     QStringList selectedFiles;
 };
 

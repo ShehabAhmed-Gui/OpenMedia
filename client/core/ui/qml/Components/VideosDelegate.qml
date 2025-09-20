@@ -4,22 +4,22 @@ import QtMultimedia
 
 Rectangle {
     id: root
-    color: "#1A1A1D"
+    color: "#121212"
     anchors.horizontalCenter: parent? parent.horizontalCenter : undefined
 
     width: parent? parent.width - 20 : 20
     height: 40
 
-    border.color: isCurrentlyPlaying? "#04471c" : "transparent"
+    border.color: isCurrentlyPlaying? "#2E7D32" : "transparent"
     border.width: 0.5
 
     radius: 11
 
-    property bool isCurrentlyPlaying: video.source.toString().toLowerCase() === path.toLowerCase()
+    property bool isCurrentlyPlaying: mediaPlayer.source.toString().toLowerCase() === path.toLowerCase()
 
     function setCurrentIndex() {
         listView.currentIndex = index
-        listModel.currentIndex = index
+        PlaylistModel.currentIndex = index
     }
 
     Component.onCompleted: {
@@ -57,12 +57,12 @@ Rectangle {
         anchors.leftMargin: 5
         anchors.verticalCenter: parent.verticalCenter
 
-        iconSource:  isCurrentlyPlaying && videoState === MediaPlayer.PlayingState
+        iconSource: isCurrentlyPlaying && videoState === MediaPlayer.PlayingState
             ? "qrc:/images/svg/pause.svg"
             : "qrc:/images/svg/play.svg"
 
-        iconWidth: 18
-        iconHeight: 18
+        iconWidth: 22
+        iconHeight: 22
         width: 24
         height: 24
 
@@ -73,11 +73,11 @@ Rectangle {
             onClicked: {
                 setCurrentIndex();
 
-                if (isCurrentlyPlaying && video.playbackState === MediaPlayer.PlayingState) {
-                    video.pause()
+                if (isCurrentlyPlaying && mediaPlayer.playbackState === MediaPlayer.PlayingState) {
+                    mediaPlayer.pause()
                 } else {
-                    video.source = path
-                    video.play()
+                    mediaPlayer.source = path
+                    mediaPlayer.play()
                 }
             }
         }
@@ -105,7 +105,7 @@ Rectangle {
         Text {
             id: videoName
             text: name
-            color: "#D8D2C2"
+            color: "#FFFFFF"
 
             width: videoName.contentWidth
             height: parent.height
@@ -131,14 +131,14 @@ Rectangle {
         iconSource: "qrc:/images/svg/trash.svg"
 
         ToolTipType {
-            toolTipText: "Delete video"
+            toolTipText: "Delete mediaPlayer"
         }
 
         MouseArea {
             anchors.fill: parent
             cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
 
-            onClicked: listModel.deleteItem(index);
+            onClicked: PlaylistModel.deleteItem(index);
         }
     }
 }

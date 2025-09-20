@@ -1,35 +1,41 @@
-#include "listmodel.h"
+#include "PlaylistModel.h"
 #include <qcolor.h>
 
-ListModel::ListModel(QObject *parent) : QAbstractListModel{parent}
+PlaylistModel::PlaylistModel(const QSharedPointer<Settings> settings,
+                     const QSharedPointer<FilesManager> filesManager,
+                     QObject *parent)
+    : QAbstractListModel{parent}
+    , m_settings(settings)
+    , m_filesManager(filesManager)
 {
     beginInsertRows(QModelIndex(), m_data.size(), m_data.size());
-        for (QString &item : settings.getKeys("Playlist")) {
-            const QString &playlistItem = settings.getSetting("Playlist", item).toString();
+        for (QString &item : m_settings->getKeys("Playlist")) {
+            const QString &playlistItem = m_settings->getSetting("Playlist", item).toString();
             m_data.append(playlistItem);
         }
     endInsertRows();
 }
 
-ListModel::~ListModel()
+PlaylistModel::~PlaylistModel()
 {
-    // Remove playlist saved items before saving current items
-    settings.removeKey("Playlist", "");
+    // Remove old playlist saved items before saving current items
+    m_settings->removeGroup("Playlist");
+
     for (int i = 0; i < m_data.size(); i++) {
         const QString &file = m_data[i];
         const QString &item = QString("Item") + QString::number(i);
-        settings.saveSettings("Playlist", item, file);
+        m_settings->saveSetting("Playlist", item, file);
     }
 }
 
-int ListModel::rowCount(const QModelIndex &parent) const
+int PlaylistModel::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
 
     return m_data.count();
 }
 
-QVariant ListModel::data(const QModelIndex &index, int role) const
+QVariant PlaylistModel::data(const QModelIndex &index, int role) const
 {
     int row = index.row();
 
@@ -54,7 +60,7 @@ QVariant ListModel::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
-QHash<int, QByteArray> ListModel::roleNames() const
+QHash<int, QByteArray> PlaylistModel::roleNames() const
 {
     return {
         {name, "name"},
@@ -62,7 +68,7 @@ QHash<int, QByteArray> ListModel::roleNames() const
     };
 }
 
-bool ListModel::setData(const QModelIndex &index, const QVariant &value, int role)
+bool PlaylistModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
     if (role == Qt::UserRole) {
         m_data[index.row()] = value.toString();
@@ -73,11 +79,11 @@ bool ListModel::setData(const QModelIndex &index, const QVariant &value, int rol
     return false;
 }
 
-void ListModel::loadVideos()
+void PlaylistModel::loadVideos()
 {
-    QVector<QString> selected = filesManager.selectFiles();
+    QVector<QString> selected = m_filesManager->selectFiles();
 
-      for (const auto& item : std::as_const(selected)) {
+    for (const auto& item : std::as_const(selected)) {
         if (!m_data.contains(item)) {
             beginInsertRows(QModelIndex(), m_data.size(), m_data.size());
                 m_data.append(item);
@@ -86,7 +92,7 @@ void ListModel::loadVideos()
     }
 }
 
-void ListModel::deleteItem(const qsizetype &index)
+void PlaylistModel::deleteItem(const qsizetype &index)
 {
     if (index != 0  || !(index > m_data.size())) {
         beginRemoveRows(QModelIndex(), index, index);
@@ -95,25 +101,27 @@ void ListModel::deleteItem(const qsizetype &index)
     } else { qDebug() << "Item doesn't exist"; }
 }
 
-void ListModel::clearPlaylist()
+void PlaylistModel::clearPlaylist()
 {
     beginRemoveRows (QModelIndex(), 0, m_data.size() - 1);
         m_data.clear();
     endRemoveRows();
 }
 
-QString ListModel::getPrevious()
+QString PlaylistModel::getPrevious()
 {
     if (m_data.isEmpty()) {
         return QString();
     }
 
-    m_currentIndex = m_currentIndex <= 0 ? m_data.size() - 1 : m_currentIndex - 1;
+    qDebug() << "currentIndex = "  << m_currentIndex;
+
+    m_currentIndex = m_currentIndex == 0? m_data.size() - 1 : m_currentIndex - 1;
 
     return m_data.at(m_currentIndex);
 }
 
-QString ListModel::getNext()
+QString PlaylistModel::getNext()
 {
     if (m_data.isEmpty()) {
         return QString();
@@ -123,12 +131,12 @@ QString ListModel::getNext()
     return m_data.at(m_currentIndex);
 }
 
-qsizetype ListModel::currentIndex() const
+qsizetype PlaylistModel::currentIndex() const
 {
     return m_currentIndex;
 }
 
-void ListModel::setCurrentIndex(qsizetype newCurrentIndex)
+void PlaylistModel::setCurrentIndex(qsizetype newCurrentIndex)
 {
     if (m_currentIndex == newCurrentIndex)
         return;

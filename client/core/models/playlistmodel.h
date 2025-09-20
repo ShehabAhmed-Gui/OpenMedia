@@ -4,19 +4,21 @@
 #include <QAbstractListModel>
 #include <QObject>
 
-#include "../filesManager/filesManager.h"
+#include "../filesmanager.h"
 
 
-class ListModel : public QAbstractListModel
+class PlaylistModel : public QAbstractListModel
 {
     Q_OBJECT
 
     Q_PROPERTY(qsizetype currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged FINAL)
 
 public:
-    ListModel(QObject *parent = 0);
+    PlaylistModel(const QSharedPointer<Settings> settings,
+              const QSharedPointer<FilesManager> filesManager,
+              QObject *parent = 0);
 
-    ~ListModel();
+    ~PlaylistModel();
 
 enum data {
     name = Qt::UserRole,
@@ -44,8 +46,8 @@ signals:
 
 private:
     QVector<QString> m_data;
-    FilesManager filesManager;
-    SettingsManager settings;
+    QSharedPointer<FilesManager> m_filesManager;
+    QSharedPointer<Settings> m_settings;
     qsizetype m_currentIndex;
 };
 

@@ -1,9 +1,12 @@
-#include "filesManager.h"
+#include "filesmanager.h"
 
-FilesManager::FilesManager(QObject *parent) :
-    supportedVids("*.mp4 *.wav *.mkv *.webm"), settings{SettingsManager()}
+FilesManager::FilesManager(const QSharedPointer<Settings> settings,
+                           QObject *parent)
+    : supportedVids("*.mp4 *.wav *.mkv *.webm")
+    , m_settings(settings)
 {
-    m_defaultPath = settings.getSetting("VideosPath", "lastSelectedPath").toString().remove("file://");
+    m_defaultPath = m_settings->getSetting("VideosPath", "lastSelectedPath").toString().remove("file://");
+    dialog = new QFileDialog();
 }
 
 FilesManager::~FilesManager()
@@ -22,13 +25,12 @@ void FilesManager::playFile(QString path)
 
 QVector<QString> FilesManager::selectFiles()
 {
-    dialog = new QFileDialog();
     dialog->setOptions(QFileDialog::ReadOnly);
     selectedFiles = dialog->getOpenFileNames(nullptr, "Select A Bunch Of Videos", m_defaultPath, supportedVids);
 
     if (!selectedFiles.isEmpty()) {
         const QString &videosPath = selectedFiles.last();
-        settings.saveSettings("VideosPath", "lastSelectedPath", videosPath);
+        m_settings->saveSetting("VideosPath", "lastSelectedPath", videosPath);
         m_defaultPath = videosPath;
     }
 

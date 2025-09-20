@@ -8,11 +8,11 @@ Item {
     Layout.maximumWidth: 150
 
     property alias volumeSlider: volumeSlider
-    property alias volumeButton: volume
+    property alias muteButton: muteButton
     property int volumeLevel
 
     function setMuted(muted) {
-        video.muted = muted
+        mediaPlayer.audioOutput.muted = muted
     }
 
     RowLayout {
@@ -21,13 +21,13 @@ Item {
         spacing: 10
 
         CustomButton {
-            id: volume
+            id: muteButton
 
             ToolTipType {
-                toolTipText: video.muted? "Unmute" : "Mute"
+                toolTipText: mediaPlayer.audioOutput.muted? "Unmute" : "Mute"
             }
 
-              iconSource: ( video.muted || volumeLevel === 0? "qrc:/images/svg/muted.svg" : volumeLevel < 70
+              iconSource: ( mediaPlayer.audioOutput.muted || volumeLevel === 0? "qrc:/images/svg/muted.svg" : volumeLevel < 70
                    ? "qrc:/images/svg/volume_low.svg"
                    : "qrc:/images/svg/volume_high.svg")
             iconWidth: 13
@@ -37,7 +37,7 @@ Item {
                 anchors.fill: parent
                 cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
                 onClicked: {
-                    setMuted(!video.muted)
+                    setMuted(!mediaPlayer.audioOutput.muted)
                 }
             }
         }
@@ -57,19 +57,19 @@ Item {
 
             from: 0
             to: 100
-            value: (video.volume * 100).toFixed()
+            value: (mediaPlayer.audioOutput.volume * 100).toFixed()
 
             onValueChanged: {
                 volumeLevel = value
-                video.volume = volumeSlider.value / 100
-                video.focus = true
+                mediaPlayer.audioOutput.volume = volumeSlider.value / 100
+                // mediaPlayer = true
             }
 
             Connections {
-                target: video
+                target: mediaPlayer.audioOutput
                 property int videoVolume
                 function onVolumeChanged() {
-                    videoVolume = video.volume * 100
+                    videoVolume = mediaPlayer.audioOutput.volume * 100
                     volumeSlider.value = videoVolume
                 }
             }

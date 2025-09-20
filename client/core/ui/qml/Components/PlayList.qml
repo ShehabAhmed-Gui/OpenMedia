@@ -1,17 +1,15 @@
 import QtQuick
 import QtQuick.Layouts
-import com.qt.openmedia
 
 import "../Components"
 
 Rectangle {
     id: root
 
-    color: "#000000"
+    color: "#1E1E1E"
     radius: 8
     border.color: "#685752"
 
-    property alias playlistModel: listModel
     property alias listView: listView
 
     MouseArea {
@@ -43,7 +41,7 @@ Rectangle {
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: listModel.clearPlaylist()
+                    onClicked: PlaylistModel.clearPlaylist()
                 }
             }
 
@@ -79,7 +77,7 @@ Rectangle {
                     anchors.fill: parent
                     cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
 
-                    onClicked:  listModel.loadVideos();
+                    onClicked: PlaylistModel.loadVideos();
                 }
             }
         }
@@ -93,7 +91,7 @@ Rectangle {
             signal playNext()
             signal playPrevious()
 
-            model: listModel
+            model: PlaylistModel
 
             spacing: 20
             clip: true
@@ -101,25 +99,21 @@ Rectangle {
             delegate: VideosDelegate {
             }
 
-            contentHeight: listModel.count * (delegate.height + spacing) + 10
+            contentHeight: PlaylistModel.count * (delegate.height + spacing) + 10
 
             onPlayNext: {
-                video.source = Qt.url(listModel.getNext())
+                mediaPlayer.source = Qt.url(PlaylistModel.getNext())
                 Qt.callLater(() => {
-                    video.play()
+                    mediaPlayer.play()
                 });
             }
 
             onPlayPrevious: {
-                video.source = Qt.url(listModel.getPrevious())
+                mediaPlayer.source = Qt.url(PlaylistModel.getPrevious())
                 Qt.callLater(() => {
-                    video.play()
+                    mediaPlayer.play()
                 });
             }
-        }
-
-        MVideos {
-            id: listModel
         }
 
         Rectangle {

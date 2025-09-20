@@ -18,7 +18,6 @@
         <file>ui/qml/Components/CustomButton.qml</file>
         <file>ui/qml/Components/CustomSliderType.qml</file>
         <file>ui/qml/Components/ToolTipType.qml</file>
-        <file>ui/qml/Components/VideoPlayerType.qml</file>
         <file>ui/qml/Components/VideosDelegate.qml</file>
         <file>ui/qml/Controls/AudioControls.qml</file>
         <file>ui/qml/Controls/BottomControls.qml</file>
@@ -29,5 +28,8 @@
         <file>images/forward_10s.png</file>
         <file>images/svg/pause.svg</file>
         <file>images/icon.png</file>
+        <file>images/svg/subtitles.svg</file>
+        <file>ui/qml/Components/SubtitlePopup.qml</file>
+        <file>ui/qml/delegates/SubtitlesDelegate.qml</file>
     </qresource>
 </RCC>

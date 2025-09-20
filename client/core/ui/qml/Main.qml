@@ -2,7 +2,8 @@ import QtQuick
 import QtQuick.Window
 import QtQuick.Controls.Fusion
 import QtMultimedia
-import com.qt.openmedia
+
+import com.qt.openmedia 1.0
 
 import "Controls"
 import "Components"
@@ -11,9 +12,9 @@ ApplicationWindow {
     id: root
     readonly property bool isMobileTarget: Qt.platform.os === "android" || Qt.platform.os === "ios"
     readonly property string os: Qt.platform.os
-    readonly property bool soundMuted: AppSettings.getSetting("Audio", "muted")
+    readonly property bool soundMuted: SettingsController.getSetting("Audio", "muted")
 
-    property alias videoState: video.playbackState
+    property alias videoState: mediaPlayer.playbackState
 
     flags: Qt.Window
 
@@ -32,43 +33,49 @@ ApplicationWindow {
     }
 
     onClosing: {
-        console.log("Writing Settings. Settings saved in:", AppSettings.getSettLocation())
+        console.log("Saving app settings")
+
+        subtitleProxyModel.sourceModel = null
+        audioProxyModel.sourceModel = null
 
         // Save audio settings
-        AppSettings.saveSettings("Audio", "volume", (video.volume * 100).toFixed());
-        AppSettings.saveSettings("Audio", "muted", video.muted);
+        SettingsController.saveSetting("Audio", "volume", (audioOutput.volume * 100).toFixed());
+        SettingsController.saveSetting("Audio", "muted", audioOutput.muted);
 
-        // Save video settings
-        AppSettings.saveSettings("Video", "position", video.position / 1000)
-        AppSettings.saveSettings("Video", "video", video.source.toString())
+        // Save mediaPlayer settings
+        SettingsController.saveSetting("Video", "position", mediaPlayer.position / 1000)
+        SettingsController.saveSetting("Video", "video", mediaPlayer.source)
     }
-
 
     Connections {
         id: titleChanger
-        target: video
+        target: mediaPlayer
 
-        function onPlaying () {
-            var fileUrl = video.source.toString();
-            var fileName = fileUrl.split("/").pop();  // Extract filename from path
-            root.title = "OpenMedia -  " + decodeURIComponent(fileName);
+        // FIXME: remove file extension from name
+        function onPlaybackStateChanged () {
+            if (mediaPlayer.playbackState === MediaPlayer.PlayingState) {
+                var fileUrl = mediaPlayer.source.toString();
+                var fileName = fileUrl.split("/").pop();  // Extract filename from path
+                root.title = "OpenMedia -  " + decodeURIComponent(fileName);
+            }
         }
     }
 
-    Connections {
-        id: playVideoFromArg
-        target: AppManager
+    // FIXME: use CoreController here
+    // Connections {
+    //     id: playVideoFromArg
+    //     target: AppManager
 
-        function onVideoPassedAsArg (arg) {
-            hidePlaylist.start()
-            video.stop();
-            Qt.callLater(() => {
-                video.source = Qt.url(arg);
-                video.play();
-                video.position = 0;
-            });
-        }
-    }
+    //     function onVideoPassedAsArg (arg) {
+    //         hidePlaylist.start()
+    //         mediaPlayer.stop();
+    //         Qt.callLater(() => {
+    //             mediaPlayer.source = Qt.url(arg);
+    //             mediaPlayer.play();
+    //             mediaPlayer.position = 0;
+    //         });
+    //     }
+    // }
 
     Timer {
         id: hoverTimer
@@ -79,7 +86,7 @@ ApplicationWindow {
 
     Timer {
         id: afkTimer
-        interval: 4000
+        interval: 5000
         repeat: true
         onTriggered: {
             if(bottomControls.isMediaSliderPressed) {
@@ -91,99 +98,127 @@ ApplicationWindow {
         }
     }
 
-    VideoPlayerType {
-        id: video
-        anchors {
-            fill: parent
-            margins: 3
-        }
-
+    Item {
+        id: mediaPlayerContainer
+        anchors.fill: parent
         width: 500
         height: 500
-        volume: 0.3
-        source: AppSettings.getSetting("Video", "video")
 
-        cursorWidth: 40
-        cursorHeight: 40
+        MediaPlayer {
+            id: mediaPlayer
 
-        onSeekableChanged: {
-            if (seekable) {
-                // Fixes a bug on windows
-                Qt.callLater(() => {
-                    video.position = AppSettings.getSetting("Video", "position") * 1000;
-                });
-            }
-        }
+            videoOutput: videoOutput
+            audioOutput: audioOutput
 
-        Component.onCompleted: {
-            afkTimer.start()
+            source: Qt.url(SettingsController.getSetting("Video", "video"))
 
-            video.volume = AppSettings.getSetting("Audio", "volume") / 100
-
-            video.source = Qt.url(AppSettings.getSetting("Video", "video"))
-
-            // Set loaded video last-saved frame instead of black screen
-            video.play()
-            video.pause()
-        }
-
-        onSourceChanged: AppSettings.saveSettings("Video", "video", source.toString())
-
-        MouseArea {
-            id: videoMouseArea
-            anchors.fill: parent
-            hoverEnabled: true
-            preventStealing: true
-
-            onEntered: {
-                hoverTimer.start()
-            }
-
-            onExited: {
-                hoverTimer.stop();
-            }
-
-            onClicked: {
-                videoState === MediaPlayer.PlayingState? video.pause() : video.play()
-            }
-
-            onPositionChanged: {
-                if (!isMobileTarget) {
-                    changeMouseCursor(true);
-                    afkTimer.restart()
-                    showControls.start()
+            onSeekableChanged: {
+                if (mediaPlayer.seekable) {
+                    // Fixes a bug on windows
+                    Qt.callLater(() => {
+                        mediaPlayer.position = SettingsController.getSetting("Video", "position") * 1000;
+                    });
                 }
             }
+
+            onTracksChanged: {
+                console.log("Available subtitle tracks:", mediaPlayer.subtitleTracks.length)
+                console.log("Available Audio tracks:", mediaPlayer.audioTracks.length)
+
+                MetaDataModel.setSubtitles(mediaPlayer.subtitleTracks)
+                MetaDataModel.setAudioTracks(mediaPlayer.audioTracks)
+            }
+
+            Component.onCompleted: {
+                audioOutput.muted = soundMuted
+                afkTimer.start()
+
+                mediaPlayer.audioOutput.volume = SettingsController.getSetting("Audio", "volume") / 100
+
+                mediaPlayer.source = SettingsController.getSetting("Video", "video")
+
+                // Set loaded mediaPlayer to last-saved frame instead of black screen
+                mediaPlayer.play()
+                mediaPlayer.pause()
+            }
+
+            onSourceChanged: SettingsController.saveSetting("Video", "video", mediaPlayer.source.toString())
+        }
+
+        Keys.onSpacePressed: videoState === MediaPlayer.PlayingState? mediaPlayer.pause() : mediaPlayer.play()
+        Keys.onLeftPressed: bottomControls.seekBackward()
+        Keys.onRightPressed: bottomControls.seekForward()
+
+        MediaDevices {
+            id: mediaDevices
+        }
+
+        AudioOutput {
+            id: audioOutput
+            // Use default output device so it follows the device in case changed
+            device: mediaDevices.defaultAudioOutput
+            volume: 0.5
+        }
+
+        VideoOutput {
+            id: videoOutput
+            anchors.fill: parent
+            anchors.margins: 3
+
+            Keys.onPressed: (key) => {
+                if (key.key === Qt.Key_K) {
+                     if(videoState === MediaPlayer.PlayingState) {
+                        mediaPlayer.pause()
+                     } else {
+                        mediaPlayer.play()
+                    }
+                }
+            }
+
+            fillMode: VideoOutput.Stretch
+            focus: true
         }
 
         Timer {
             id: videoFocusTimer
             interval: 300
             repeat: true
-            onTriggered: video.focus = true
+            onTriggered: videoOutput.focus = true
         }
 
-        Keys.onSpacePressed: videoState === MediaPlayer.PlayingState? video.pause() : video.play()
-        Keys.onLeftPressed: bottomControls.seekBackward()
-        Keys.onRightPressed: bottomControls.seekForward()
+        TapHandler {
+            id: mediaPlayerMouseArea
 
-        Keys.onPressed: (key) => {
-            if (key.key === Qt.Key_K) {
-                 if(videoState === MediaPlayer.PlayingState) {
-                    video.pause()
-                 } else {
-                    video.play()
-                }
+            onDoubleTapped: root.visibility === Window.FullScreen
+                            ? showNormal() : showFullScreen()
+            onTapped: videoState === MediaPlayer.PlayingState
+                      ? mediaPlayer.pause() : mediaPlayer.play()
+        }
+
+        HoverHandler {
+            onHoveredChanged: hovered? hoverTimer.start() : hoverTimer.stop()
+
+            onPointChanged: {
+                changeMouseCursor(true);
+                afkTimer.restart()
+                showControls.start()
             }
         }
     }
 
     BottomControls {
         id: bottomControls
-        anchors.bottom: video.bottom
+        anchors.bottom: mediaPlayerContainer.bottom
 
         width: parent.width
         color: "transparent"
+    }
+
+    SubtitlePopup {
+        id: subtitlePopup
+        visible: false
+        anchors.bottom: bottomControls.top
+        anchors.right: parent.right
     }
 
     PlayList {
@@ -210,12 +245,11 @@ ApplicationWindow {
         onStopped: changePlaylistHeight.start()
 
         NumberAnimation {
-            targets: bottomControls
+            targets: bottomControls.bottomOpacity
             property: "opacity"
             to: 0
             duration: 1000
             easing.type: Easing.InOutQuad
-
         }
     }
 
@@ -263,18 +297,35 @@ ApplicationWindow {
         }
     }
 
+    // FIXME: change function name
     function changeMouseCursor(state) {
         switch (state) {
             case true:
-                videoMouseArea.cursorShape = Qt.ArrowCursor;
+                mediaPlayerMouseArea.cursorShape = Qt.ArrowCursor;
                 bottomControls.bottomMA.cursorShape = Qt.ArrowCursor;
                 break;
             case false:
-                videoMouseArea.cursorShape = Qt.BlankCursor;
+                mediaPlayerMouseArea.cursorShape = Qt.BlankCursor;
                 bottomControls.bottomMA.cursorShape = Qt.BlankCursor;
                 break;
             default:
             break;
         }
+    }
+
+    MetaDataFilterProxyModel {
+        id: audioProxyModel
+
+        sourceModel: MetaDataModel
+
+        filterMetaData: "audio"
+    }
+
+    MetaDataFilterProxyModel {
+        id: subtitleProxyModel
+
+        sourceModel: MetaDataModel
+
+        filterMetaData: "subtitle"
     }
 }
