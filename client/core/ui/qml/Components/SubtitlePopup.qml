@@ -28,6 +28,9 @@ Rectangle {
             verticalAlignment: Text.AlignVCenter
             text: "Audio"
             color: "#ffffff"
+
+            font.family: "Poppins"
+            font.weight: Font.Bold
             font.bold: true
         }
 
@@ -39,11 +42,14 @@ Rectangle {
         Text {
             id: subtitleTitle
 
-            font.pixelSize: 17
             verticalAlignment: Text.AlignVCenter
             text: "Subtitles"
             color: "#ffffff"
+
             font.bold: true
+            font.pixelSize: 17
+            font.family: "Poppins"
+            font.weight: Font.Bold
         }
     }
 
@@ -61,7 +67,9 @@ Rectangle {
 
             model: audioProxyModel
 
-            delegate: SubtitlesDelegate {}
+            delegate: SubtitlesDelegate {
+                onMetadataSelected: root.visible = false
+            }
         }
 
         ListView {
@@ -71,7 +79,9 @@ Rectangle {
 
             model: subtitleProxyModel
 
-            delegate: SubtitlesDelegate {}
+            delegate: SubtitlesDelegate {
+                onMetadataSelected: root.visible = false
+            }
         }
     }
 }

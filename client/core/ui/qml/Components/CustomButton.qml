@@ -3,7 +3,7 @@ import QtQuick.Controls
 import QtQuick.Controls.Fusion
 import QtQuick.Layouts
 
-import "../Controls"
+import "../controls"
 
 Button {
     id: root
@@ -29,7 +29,7 @@ Button {
     onControlHovered: (hovered) => {
         switch (hovered) {
             case true: afkTimer.stop();
-                break;
+            break;
             case false: afkTimer.start();
             break;
         }
@@ -64,8 +64,10 @@ Button {
             id: mouseArea
             anchors.fill: parent
             preventStealing: true
+            propagateComposedEvents: false
             hoverEnabled: true
-            cursorShape: isHovered ? Qt.PointingHandCursor : Qt.ArrowCursor
+            cursorShape: isHovered
+                         ? Qt.PointingHandCursor : Qt.ArrowCursor
 
             onEntered: {
                 controlHovered(true)

@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 
     app.setOrganizationName("OpenMedia");
     app.setApplicationName("OpenMedia");
-    app.setWindowIcon(QIcon(":/images/icon.png"));
+    app.setWindowIcon(QIcon(":/ui/icons/icon.png"));
 
     QSharedPointer<Settings> settings;
     settings.reset(new Settings(&app));

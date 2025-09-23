@@ -4,16 +4,14 @@ import QtMultimedia
 
 Rectangle {
     id: root
-    color: "#121212"
+    color: "#2C3930"
     anchors.horizontalCenter: parent? parent.horizontalCenter : undefined
 
     width: parent? parent.width - 20 : 20
-    height: 40
-
-    border.color: isCurrentlyPlaying? "#2E7D32" : "transparent"
+    height: 45
+    border.color: isCurrentlyPlaying? "orange" : "transparent"
     border.width: 0.5
-
-    radius: 11
+    radius: 7
 
     property bool isCurrentlyPlaying: mediaPlayer.source.toString().toLowerCase() === path.toLowerCase()
 
@@ -58,13 +56,27 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
 
         iconSource: isCurrentlyPlaying && videoState === MediaPlayer.PlayingState
-            ? "qrc:/images/svg/pause.svg"
-            : "qrc:/images/svg/play.svg"
+            ? "qrc:/ui/icons/svg/pause.svg"
+            : "qrc:/ui/icons/svg/play.svg"
 
-        iconWidth: 22
-        iconHeight: 22
+        iconWidth: isCurrentlyPlaying && videoState === MediaPlayer.PlayingState? 22 : 24
+        iconHeight: isCurrentlyPlaying && videoState === MediaPlayer.PlayingState? 22 : 24
         width: 24
         height: 24
+
+        ToolTipType {
+            toolTipText: {
+                if (path.endsWith(".mp3") && videoState === MediaPlayer.PausedState) {
+                    "Play this music"
+                } else if (path.endsWith(".mp3") && videoState === MediaPlayer.PlayingState && isCurrentlyPlaying) {
+                    "Stop this music"
+                } else if (videoState === MediaPlayer.PlayingState && isCurrentlyPlaying) {
+                    "Stop this video"
+                } else {
+                    "Play this video"
+                }
+            }
+        }
 
         MouseArea {
             anchors.fill: parent
@@ -115,8 +127,9 @@ Rectangle {
                 verticalCenter: parent.verticalCenter
             }
 
+            font.family: "Poppins"
             font.pixelSize: 13
-            font.weight: 400
+            font.weight: Font.Medium
 
             wrapMode: Text.NoWrap
         }
@@ -128,10 +141,10 @@ Rectangle {
         anchors.right: parent.right
         anchors.rightMargin: 10
 
-        iconSource: "qrc:/images/svg/trash.svg"
+        iconSource: "qrc:/ui/icons/svg/trash.svg"
 
         ToolTipType {
-            toolTipText: "Delete mediaPlayer"
+            toolTipText: "Remove video"
         }
 
         MouseArea {

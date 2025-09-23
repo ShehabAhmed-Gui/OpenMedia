@@ -1,11 +1,10 @@
 import QtQuick
 import QtQuick.Layouts
 
-import "../Components"
+import "../components"
 
 Rectangle {
     id: root
-
     color: "#1E1E1E"
     radius: 8
     border.color: "#685752"
@@ -32,7 +31,7 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.leftMargin: 20
 
-                iconSource: "qrc:/images/svg/trash.svg"
+                iconSource: "qrc:/ui/icons/svg/trash.svg"
 
                 ToolTipType {
                     toolTipText: qsTr("Remove all videos")
@@ -50,8 +49,10 @@ Rectangle {
                 text: qsTr("Videos Playlist")
 
                 color: "#ffffff"
+
+                font.family: "Poppins"
                 font.pixelSize: 13
-                font.weight: 400
+                font.weight: Font.Normal
 
                 anchors.centerIn: parent
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -59,7 +60,7 @@ Rectangle {
 
             CustomButton {
                 id: addItems
-                iconSource: "qrc:/images/svg/plus.svg"
+                iconSource: "qrc:/ui/icons/svg/plus.svg"
                 backgroundColor: "transparent"
 
                 width: iconWidth + 5

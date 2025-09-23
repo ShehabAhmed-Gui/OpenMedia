@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
-import "../Components"
+import "../components"
 
 Item {
     id: root
@@ -18,7 +18,7 @@ Item {
             visible: showPlaybackSpeedIcon
             Layout.minimumHeight: 13
             Layout.minimumWidth: 13
-            source: "qrc:/images/svg/playback_rate.svg"
+            source: "qrc:/ui/icons/svg/playback_rate.svg"
         }
 
         CustomSliderType {
@@ -45,6 +45,10 @@ Item {
         Text {
             text: playBackSpeedSlider.value.toFixed(1) + "x"
             color: "#41CD52"
+
+            font.pixelSize: 13
+            font.family: "Poppins"
+            font.weight: Font.Medium
         }
     }
 }

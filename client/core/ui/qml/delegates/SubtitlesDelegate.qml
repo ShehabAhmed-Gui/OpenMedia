@@ -9,6 +9,8 @@ Rectangle {
 
     Component.onCompleted: root.width = parent.width
 
+    signal metadataSelected()
+
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
@@ -18,12 +20,14 @@ Rectangle {
         cursorShape: Qt.PointingHandCursor
 
         onClicked: {
+            metadataSelected()
+
             if (name === "Off" && type === "subtitle") {
                 mediaPlayer.activeSubtitleTrack = -1
             } else if (type === "subtitle") {
                 mediaPlayer.activeSubtitleTrack = index - 1 // Substract "Off" index
             } else {
-                mediaPlayer.activeAudioTrack = index - 1 // Substract "Off" index
+                mediaPlayer.activeAudioTrack = index
             }
         }
     }
@@ -34,21 +38,41 @@ Rectangle {
 
         Image {
             id: currentlySelected
+            Layout.leftMargin: type === "audio" &&
+                               index == mediaPlayer.activeAudioTrack? 15 : 0
 
-            // TODO: add "success" icon
+            Component.onCompleted: {
+                if (type === "subtitle" && mediaPlayer.activeSubtitleTrack === index)
+                    visible = rtue
+                else if (type === "audio" && mediaPlayer.activeAudioTrack === index)
+                    visible = true
+            }
+
+            source: "qrc:/ui/icons/svg/selected.svg"
+            Layout.minimumWidth: 20
+            Layout.maximumWidth: 20
+
+            Layout.minimumHeight: 20
+            Layout.maximumHeight: 20
+            smooth: true
         }
 
         Text {
             id: metadataName
             Layout.minimumWidth: 20
             Layout.minimumHeight: 20
-            Layout.leftMargin: type === "audio"? 15 : 0
 
             text: name
-            font.pixelSize: 15
             color: "#ffffff"
 
+            font.pixelSize: 17
+            font.family: "Poppins"
+            font.weight: Font.Medium
             font.bold: true
+        }
+
+        Item {
+            Layout.fillWidth: true
         }
     }
 }

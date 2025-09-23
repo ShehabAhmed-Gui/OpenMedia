@@ -2,7 +2,7 @@
 
 FilesManager::FilesManager(const QSharedPointer<Settings> settings,
                            QObject *parent)
-    : supportedVids("*.mp4 *.wav *.mkv *.webm")
+    : supportedVids("*.mp3 *.mp4 *.wav *.mkv *.webm")
     , m_settings(settings)
 {
     m_defaultPath = m_settings->getSetting("VideosPath", "lastSelectedPath").toString().remove("file://");

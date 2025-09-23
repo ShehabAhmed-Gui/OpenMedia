@@ -16,6 +16,8 @@ Slider {
     property string handleColor: "#A6A9C8"
     property string subPageColor: "#333333"
 
+    property alias sliderBackgroundRect: backgroundRect
+
     property int sliderWidth: 150
     property int sliderHeight: 7
 
@@ -56,11 +58,13 @@ Slider {
             hoverEnabled: true
 
             onEntered: {
+                afkTimer.stop()
                 sliderMA.cursorShape = Qt.ClosedHandCursor
                 enableHandler = true
             }
 
             onExited: {
+                afkTimer.start()
                 sliderMA.cursorShape = Qt.ArrowCursor
                 enableHandler = false
             }

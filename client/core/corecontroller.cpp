@@ -1,6 +1,8 @@
 #include "corecontroller.h"
 #include <qqmlcontext.h>
 
+#include <QFontDatabase>
+
 CoreController::CoreController(QQmlApplicationEngine *engine,
                                const QSharedPointer<Settings> settings,
                                const QSharedPointer<FilesManager> filesManager,
@@ -10,8 +12,30 @@ CoreController::CoreController(QQmlApplicationEngine *engine,
     , m_filesManager(filesManager)
     , m_engine(engine)
 {
+    loadFonts();
+
     initModels();
     initControllers();
+}
+
+void CoreController::loadFonts()
+{
+    QVector<QString> fontPaths = {
+      ":/ui/fonts/Poppins-Light.ttf",
+      ":/ui/fonts/Poppins-Regular.ttf",
+      ":/ui/fonts/Poppins-Medium.ttf",
+      ":/ui/fonts/Poppins-SemiBold.ttf",
+      ":/ui/fonts/Poppins-Bold.ttf",
+      ":/ui/fonts/Poppins-ExtraBold.ttf"
+    };
+
+    for (const QString &font : fontPaths) {
+        int id = QFontDatabase::addApplicationFont(font);
+
+        if (id == -1) {
+            qWarning() << "Failed to add font:" << font;
+        }
+    }
 }
 
 void CoreController::initModels()

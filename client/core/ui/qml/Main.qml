@@ -5,11 +5,11 @@ import QtMultimedia
 
 import com.qt.openmedia 1.0
 
-import "Controls"
-import "Components"
+import "controls"
+import "components"
 
 ApplicationWindow {
-    id: root
+    id: mainWindow
     readonly property bool isMobileTarget: Qt.platform.os === "android" || Qt.platform.os === "ios"
     readonly property string os: Qt.platform.os
     readonly property bool soundMuted: SettingsController.getSetting("Audio", "muted")
@@ -21,7 +21,7 @@ ApplicationWindow {
     width: 1500
     height: 800
     minimumHeight: 460
-    minimumWidth: 640
+    minimumWidth: 700
     visible: true
     title: "OpenMedia"
     color: "#000000"
@@ -47,16 +47,36 @@ ApplicationWindow {
         SettingsController.saveSetting("Video", "video", mediaPlayer.source)
     }
 
+    function setMouseCursorVisible(state) {
+        switch (state) {
+            case true:
+                videoMouseArea.cursorShape = Qt.ArrowCursor;
+                bottomControls.bottomMA.cursorShape = Qt.ArrowCursor;
+                break;
+            case false:
+                videoMouseArea.cursorShape = Qt.BlankCursor;
+                bottomControls.bottomMA.cursorShape = Qt.BlankCursor;
+                break;
+            default:
+            break;
+        }
+    }
+
     Connections {
         id: titleChanger
         target: mediaPlayer
 
-        // FIXME: remove file extension from name
         function onPlaybackStateChanged () {
             if (mediaPlayer.playbackState === MediaPlayer.PlayingState) {
                 var fileUrl = mediaPlayer.source.toString();
                 var fileName = fileUrl.split("/").pop();  // Extract filename from path
-                root.title = "OpenMedia -  " + decodeURIComponent(fileName);
+
+                var parts = fileName.split(".");
+                if (parts.length > 1)
+                    parts.pop();
+
+                var baseName = parts.join(".");
+                mainWindow.title = "OpenMedia -  " + baseName;
             }
         }
     }
@@ -80,19 +100,18 @@ ApplicationWindow {
     Timer {
         id: hoverTimer
         interval: 3000
-
         onTriggered: showControls.start()
     }
 
     Timer {
         id: afkTimer
-        interval: 5000
+        interval: 4000
         repeat: true
         onTriggered: {
-            if(bottomControls.isMediaSliderPressed) {
+            if(bottomControls.isMediaSliderPressed || bottomControls.opacity === 0) {
                 afkTimer.restart()
             } else {
-                changeMouseCursor(false)
+                setMouseCursorVisible(false)
                 hideControls.start()
             }
         }
@@ -103,6 +122,37 @@ ApplicationWindow {
         anchors.fill: parent
         width: 500
         height: 500
+
+        Component.onCompleted: afkTimer.start()
+
+        MouseArea {
+            id: videoMouseArea
+            anchors.fill: parent
+            hoverEnabled: true
+            propagateComposedEvents: true
+
+            onPositionChanged: {
+               setMouseCursorVisible(true);
+               afkTimer.restart()
+               if (bottomControls.opacity === 0)
+                   showControls.start()
+            }
+
+            TapHandler {
+                onDoubleTapped: mainWindow.visibility === Window.FullScreen
+                                ? showNormal() : showFullScreen()
+                onTapped: videoState === MediaPlayer.PlayingState
+                          ? mediaPlayer.pause() : mediaPlayer.play()
+            }
+
+            function onHoveredChanged(hovered) {
+                if (hovered) {
+                    hoverTimer.start()
+                }
+
+                hoverTimer.stop()
+            }
+        }
 
         MediaPlayer {
             id: mediaPlayer
@@ -131,10 +181,8 @@ ApplicationWindow {
 
             Component.onCompleted: {
                 audioOutput.muted = soundMuted
-                afkTimer.start()
 
                 mediaPlayer.audioOutput.volume = SettingsController.getSetting("Audio", "volume") / 100
-
                 mediaPlayer.source = SettingsController.getSetting("Video", "video")
 
                 // Set loaded mediaPlayer to last-saved frame instead of black screen
@@ -145,9 +193,52 @@ ApplicationWindow {
             onSourceChanged: SettingsController.saveSetting("Video", "video", mediaPlayer.source.toString())
         }
 
-        Keys.onSpacePressed: videoState === MediaPlayer.PlayingState? mediaPlayer.pause() : mediaPlayer.play()
-        Keys.onLeftPressed: bottomControls.seekBackward()
-        Keys.onRightPressed: bottomControls.seekForward()
+        Keys.onSpacePressed: {
+            if (!bottomControls.opacity) {
+                showControls.start()
+                setMouseCursorVisible(true)
+            }
+
+            afkTimer.restart()
+            videoState === MediaPlayer.PlayingState? mediaPlayer.pause() : mediaPlayer.play()
+        }
+
+        Keys.onLeftPressed: {
+            if (!bottomControls.opacity) {
+                showControls.start()
+                setMouseCursorVisible(true)
+            }
+
+            afkTimer.restart()
+            bottomControls.seekBackward()
+        }
+
+        Keys.onRightPressed: {
+            if (!bottomControls.opacity) {
+                showControls.start()
+                setMouseCursorVisible(true)
+            }
+
+            afkTimer.restart()
+            bottomControls.seekForward()
+        }
+
+        Keys.onPressed: (key) => {
+            if (key.key === Qt.Key_K) {
+                if (!bottomControls.opacity) {
+                    showControls.start()
+                    setMouseCursorVisible(true)
+                }
+                afkTimer.restart()
+
+                if(videoState === MediaPlayer.PlayingState) {
+                    mediaPlayer.pause()
+                } else {
+                    mediaPlayer.play()
+                }
+            }
+        }
+
 
         MediaDevices {
             id: mediaDevices
@@ -155,7 +246,7 @@ ApplicationWindow {
 
         AudioOutput {
             id: audioOutput
-            // Use default output device so it follows the device in case changed
+            // Use default output device so it follows the new device in case changed
             device: mediaDevices.defaultAudioOutput
             volume: 0.5
         }
@@ -164,16 +255,6 @@ ApplicationWindow {
             id: videoOutput
             anchors.fill: parent
             anchors.margins: 3
-
-            Keys.onPressed: (key) => {
-                if (key.key === Qt.Key_K) {
-                     if(videoState === MediaPlayer.PlayingState) {
-                        mediaPlayer.pause()
-                     } else {
-                        mediaPlayer.play()
-                    }
-                }
-            }
 
             fillMode: VideoOutput.Stretch
             focus: true
@@ -184,25 +265,6 @@ ApplicationWindow {
             interval: 300
             repeat: true
             onTriggered: videoOutput.focus = true
-        }
-
-        TapHandler {
-            id: mediaPlayerMouseArea
-
-            onDoubleTapped: root.visibility === Window.FullScreen
-                            ? showNormal() : showFullScreen()
-            onTapped: videoState === MediaPlayer.PlayingState
-                      ? mediaPlayer.pause() : mediaPlayer.play()
-        }
-
-        HoverHandler {
-            onHoveredChanged: hovered? hoverTimer.start() : hoverTimer.stop()
-
-            onPointChanged: {
-                changeMouseCursor(true);
-                afkTimer.restart()
-                showControls.start()
-            }
         }
     }
 
@@ -215,7 +277,7 @@ ApplicationWindow {
     }
 
     SubtitlePopup {
-        id: subtitlePopup
+        id: metaDataPopup
         visible: false
         anchors.bottom: bottomControls.top
         anchors.right: parent.right
@@ -225,51 +287,68 @@ ApplicationWindow {
         id: playlist
         width: 250
         height: parent.height - bottomControls.height - 20
+        visible: false
 
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.margins: 10
-
-        NumberAnimation {
-            id: changePlaylistHeight
-            target: playlist
-            property: "height"
-            to: bottomControls.opacity === 1? root.height - bottomControls.height - 20 : root.height - 20
-            duration: 150
-            easing.type: Easing.InCurve
-        }
     }
 
     ParallelAnimation {
         id: hideControls
-        onStopped: changePlaylistHeight.start()
 
-        NumberAnimation {
-            targets: bottomControls.bottomOpacity
+        PropertyAnimation {
+            targets: bottomControls
             property: "opacity"
+            from: 1
             to: 0
-            duration: 1000
+            duration: 500
+            easing.type: Easing.InOutQuad
+        }
+        PropertyAnimation {
+            target: bottomControls.bottomOpacityRect
+            property: "opacity"
+            from: 0.40
+            to: 0
+            duration: 500
+            easing.type: Easing.InOutQuad
+        }
+        PropertyAnimation {
+            target: playlist
+            property: "opacity"
+            from: 1
+            to: 0
+            duration: 500
             easing.type: Easing.InOutQuad
         }
     }
 
     ParallelAnimation {
         id: showControls
-        onStopped: changePlaylistHeight.start()
 
-        NumberAnimation {
+        PropertyAnimation {
             targets: bottomControls
             property: "opacity"
+            from: 0
             to: 1
             duration: 500
             easing.type: Easing.InOutQuad
         }
-        NumberAnimation {
-            target: bottomControls.bottomOpacity
+        PropertyAnimation {
+            target: bottomControls.bottomOpacityRect
             property: "opacity"
+            from: 0
             to: 0.40
             duration: 500
-            easing.type: Easing.InCurve
+            easing.type: Easing.InOutQuad
+        }
+        PropertyAnimation {
+            target: playlist
+            property: "opacity"
+            from: 0
+            to: 1
+            duration: 500
+            easing.type: Easing.InOutQuad
         }
     }
 
@@ -278,10 +357,11 @@ ApplicationWindow {
 
         NumberAnimation {
             target: playlist
-            property: "width"
-            to: 250
+            property: "visible"
+            from: 0
+            to: 1
             duration: 250
-            easing.type: Easing.InCurve
+            easing.type: Easing.InOutQuad
         }
     }
 
@@ -290,26 +370,11 @@ ApplicationWindow {
 
         NumberAnimation {
             target: playlist
-            property: "width"
+            property: "visible"
+            from: 1
             to: 0
             duration: 250
-            easing.type: Easing.InCurve
-        }
-    }
-
-    // FIXME: change function name
-    function changeMouseCursor(state) {
-        switch (state) {
-            case true:
-                mediaPlayerMouseArea.cursorShape = Qt.ArrowCursor;
-                bottomControls.bottomMA.cursorShape = Qt.ArrowCursor;
-                break;
-            case false:
-                mediaPlayerMouseArea.cursorShape = Qt.BlankCursor;
-                bottomControls.bottomMA.cursorShape = Qt.BlankCursor;
-                break;
-            default:
-            break;
+            easing.type: Easing.InOutQuad
         }
     }
 

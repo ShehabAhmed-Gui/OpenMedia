@@ -43,12 +43,12 @@ QVariant PlaylistModel::data(const QModelIndex &index, int role) const
         return QVariant();
     }
 
-    //Return video name without exetenstion
-    QString videoName = QFileInfo(m_data.at(row)).completeBaseName();
+    // Return video name without exetenstion
+    QString prettyVideoName = QFileInfo(m_data.at(row)).completeBaseName();
 
     switch(role) {
         case name:
-            return videoName;
+            return prettyVideoName;
             break;
         case path:
             return m_data.at(row);
@@ -86,7 +86,7 @@ void PlaylistModel::loadVideos()
     for (const auto& item : std::as_const(selected)) {
         if (!m_data.contains(item)) {
             beginInsertRows(QModelIndex(), m_data.size(), m_data.size());
-                m_data.append(item);
+            m_data.append(item);
             endInsertRows();
         }
     }
@@ -96,7 +96,7 @@ void PlaylistModel::deleteItem(const qsizetype &index)
 {
     if (index != 0  || !(index > m_data.size())) {
         beginRemoveRows(QModelIndex(), index, index);
-            m_data.removeAt(index);
+        m_data.removeAt(index);
         endRemoveRows();
     } else { qDebug() << "Item doesn't exist"; }
 }
@@ -113,8 +113,6 @@ QString PlaylistModel::getPrevious()
     if (m_data.isEmpty()) {
         return QString();
     }
-
-    qDebug() << "currentIndex = "  << m_currentIndex;
 
     m_currentIndex = m_currentIndex == 0? m_data.size() - 1 : m_currentIndex - 1;
 

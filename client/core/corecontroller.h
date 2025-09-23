@@ -29,6 +29,8 @@ public:
                             QObject *parent = nullptr);
 
 private:
+    void loadFonts();
+
     QQmlApplicationEngine *m_engine {};
 
     QSharedPointer<PlaylistModel> m_listModel;

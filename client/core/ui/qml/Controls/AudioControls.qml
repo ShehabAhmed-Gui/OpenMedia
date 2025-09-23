@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
-import "../Components"
+import "../components"
 
 Item {
     id: root
@@ -27,9 +27,9 @@ Item {
                 toolTipText: mediaPlayer.audioOutput.muted? "Unmute" : "Mute"
             }
 
-              iconSource: ( mediaPlayer.audioOutput.muted || volumeLevel === 0? "qrc:/images/svg/muted.svg" : volumeLevel < 70
-                   ? "qrc:/images/svg/volume_low.svg"
-                   : "qrc:/images/svg/volume_high.svg")
+              iconSource: ( mediaPlayer.audioOutput.muted || volumeLevel === 0? "qrc:/ui/icons/svg/muted.svg" : volumeLevel < 70
+                   ? "qrc:/ui/icons/svg/volume_low.svg"
+                   : "qrc:/ui/icons/svg/volume_high.svg")
             iconWidth: 13
             iconHeight: 13
 
@@ -49,10 +49,10 @@ Item {
             Layout.maximumWidth: 100
 
             enableGradiant: true
-            gradiantFirstColor: "#04471c"
-            gradiantSecondColor: "#054a29"
-            subPageColor: "#111d13"
-            handleColor: "#00563B"
+            gradiantFirstColor: "#4A9782"
+            gradiantSecondColor: "#4A9782"
+            subPageColor: "#064232"
+            handleColor: "#67C090"
             sliderHeight: 7
 
             from: 0
@@ -82,6 +82,8 @@ Item {
             id: volumeLevelText
             text: volumeSlider.value
             font.pixelSize: 13
+            font.family: "Poppins"
+            font.weight: Font.Medium
 
             color: "#f3eff5"
         }

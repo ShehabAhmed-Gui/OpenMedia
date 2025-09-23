@@ -3,7 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtMultimedia
 
-import "../Components"
+import "../components"
 
 Rectangle {
     id: root
@@ -17,7 +17,7 @@ Rectangle {
     property alias playBackSpeedType: playBackSpeed
 
     property bool isMediaSliderPressed: videoSlider.pressed || audioControl.volumeSlider.pressed || playBackSpeed.playbackSlider.pressed
-    property alias bottomOpacity: bottomOpacity
+    property alias bottomOpacityRect: bottomOpacity
     property alias bottomMA: bottomControlsMouseArea
 
     function seekBackward() {
@@ -28,17 +28,47 @@ Rectangle {
         mediaPlayer.position = mediaPlayer.position += 10000
     }
 
-    function formatTime(seconds) {
-        var day = Math.floor(seconds / (24 * 3600));
-        seconds %= 24 * 3600;
-        var hour = Math.floor(seconds / 3600);
-        seconds %= 3600;
-        var minute = Math.floor(seconds / 60);
-        var second = Math.floor(seconds % 60);
-        return (day > 0 ? day + ":" : "") +
-               (hour > 0 ? hour + ":" : "") +
-               (minute > 0 ? (minute < 10 ? "0" + minute : minute) + ":" : "00:") +
-               (second < 10 ? "0" + second : second);
+    function formatTime(fullVideoDuration, currentDuration) {
+        // convert current time
+        var spentSeconds = Math.floor(currentDuration / 1000);
+        var remainingSecs = spentSeconds % 60;
+        var spentMinutes = Math.floor((spentSeconds % 3600) / 60);
+        var spentHours = Math.floor(spentSeconds / 3600);
+
+        // format current time
+        var formattedCurrent;
+        if (spentHours > 0) {
+            formattedCurrent =
+                spentHours + ":" +
+                String(spentMinutes).padStart(2, "0") + ":" +
+                String(remainingSecs).padStart(2, "0");
+        } else {
+            formattedCurrent =
+                spentMinutes + ":" +
+                String(remainingSecs).padStart(2, "0");
+        }
+
+        // convert full time
+        var totalSeconds = Math.floor(fullVideoDuration / 1000);
+        var totalRemainingSecs = totalSeconds % 60;
+        var totalMinutes = Math.floor((totalSeconds % 3600) / 60);
+        var totalHours = Math.floor(totalSeconds / 3600);
+
+        // format full time
+        var formattedFull;
+        if (totalHours > 0) {
+            formattedFull =
+                totalHours + ":" +
+                String(totalMinutes).padStart(2, "0") + ":" +
+                String(totalRemainingSecs).padStart(2, "0");
+        } else {
+            formattedFull =
+                totalMinutes + ":" +
+                String(totalRemainingSecs).padStart(2, "0");
+        }
+
+        // final YouTube style: spent / full
+        return formattedCurrent + " / " + formattedFull;
     }
 
     property bool userChangingSlider: false
@@ -46,15 +76,6 @@ Rectangle {
         interval: 300
         repeat: false
         onTriggered: userChangingSlider = false
-    }
-
-    Connections {
-        target: videoSlider
-        function onMoved() {
-            if (userChangingSlider) {
-                mediaPlayer.position = videoSlider.value * 1000
-            }
-        }
     }
 
     MouseArea {
@@ -71,24 +92,45 @@ Rectangle {
         color: "#111111"
     }
 
-    Rectangle {
+    RowLayout {
         id: videoSliderContainer
-        width: parent.width - 80
-        color: "transparent"
+        width: parent.width - 10
         anchors.top: parent.top
         anchors.topMargin: 20
+
+        Item {
+            Layout.minimumWidth: 10
+        }
+
+        Text {
+            id: videoTime
+            text: formatTime(mediaPlayer.duration, videoSlider.value)
+            color: "#ffffff"
+
+            font.pixelSize: 13
+            font.family: "Poppins"
+            font.weight: Font.Medium
+        }
+
+        Item {
+            Layout.minimumWidth: 10
+        }
 
         CustomSliderType {
             id: videoSlider
 
-            property int videoDuration: mediaPlayer.duration / 1000
+            property int videoDuration: mediaPlayer.duration
 
-            sliderWidth: parent.width - 30
+            sliderWidth: parent.width - 120
             sliderHeight: 7
 
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.left: parent.left
-            anchors.leftMargin: 30
+            sliderBackgroundRect.width: parent.width - 120
+
+            onMoved: () =>{
+                if (userChangingSlider) {
+                    mediaPlayer.position = videoSlider.value
+                }
+            }
 
             from: 0
             to: videoDuration
@@ -107,23 +149,11 @@ Rectangle {
                         playlist.listView.playNext()
                     }
 
-                    if (!userChangingSlider) {
-                        videoSlider.value = mediaPlayer.position / 1000
-                    }
+
+                    videoSlider.value = mediaPlayer.position
                 }
             }
         }
-    }
-
-    Text {
-        id: videoTime
-        text: formatTime(videoSlider.value)
-        color: "#ffffff"
-        font.pixelSize: 13
-
-        anchors.left: videoSliderContainer.right
-        anchors.verticalCenter: videoSliderContainer.verticalCenter
-        anchors.leftMargin: 10
     }
 
     RowLayout {
@@ -139,7 +169,7 @@ Rectangle {
             Layout.maximumWidth: 70
         }
 
-        PlaybackSpeed {
+        PlaybackSpeedControls {
             id: playBackSpeed
             showPlaybackSpeedIcon: Screen.primaryOrientation === Qt.LandscapeOrientation
 
@@ -155,8 +185,8 @@ Rectangle {
 
         RowLayout {
             id: controlButtons
-            spacing: Screen.primaryOrientation === Qt.LandscapeOrientation ? 17 : 10
-
+            spacing: Screen.primaryOrientation === Qt.LandscapeOrientation? 17 : 10
+            anchors.horizontalCenter: parent.horizontalCenter
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
             Layout.fillWidth: true
 
@@ -164,12 +194,12 @@ Rectangle {
                 id: skipBackward
                 buttonRadius: 0
 
-                iconSource: "qrc:/images/svg/previous.svg"
+                iconSource: "qrc:/ui/icons/svg/previous.svg"
                 iconWidth: 16
                 iconHeight: 16
 
                 ToolTipType {
-                    toolTipText: "Skip To Previous mediaPlayer"
+                    toolTipText: "Skip To Previous Video"
                 }
 
                 MouseArea {
@@ -184,7 +214,7 @@ Rectangle {
 
             CustomButton {
                 id: seekBackward
-                iconSource: "qrc:/images/backward_10s.png"
+                iconSource: "qrc:/ui/icons/backward_10s.png"
                 iconWidth: 17
                 iconHeight: 17
 
@@ -201,7 +231,9 @@ Rectangle {
 
             CustomButton {
                 id: startStopButton
-                iconSource: mediaPlayer.playbackState === MediaPlayer.PlayingState? "qrc:/images/svg/stop.svg" : "qrc:/images/svg/play.svg"
+                iconSource: mediaPlayer.playbackState === MediaPlayer.PlayingState
+                            ? "qrc:/ui/icons/svg/stop.svg"
+                            : "qrc:/ui/icons/svg/play.svg"
                 iconWidth: 30
                 iconHeight: 30
 
@@ -213,18 +245,17 @@ Rectangle {
 
                 MouseArea {
                     anchors.fill: parent
-                    hoverEnabled: true
+                    cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
 
-                    onEntered: cursorShape = Qt.PointingHandCursor
-                    onExited: cursorShape = Qt.ArrowCursor
-
-                    onClicked: mediaPlayer.playbackState === MediaPlayer.PlayingState? mediaPlayer.pause() : mediaPlayer.play()
+                    onClicked: mediaPlayer.playbackState === MediaPlayer.PlayingState
+                               ? mediaPlayer.pause()
+                               : mediaPlayer.play()
                 }
             }
 
             CustomButton {
                 id: seekForward
-                iconSource: "qrc:/images/forward_10s.png"
+                iconSource: "qrc:/ui/icons/forward_10s.png"
                 iconWidth: 17
                 iconHeight: 17
 
@@ -242,12 +273,12 @@ Rectangle {
             CustomButton {
                 id: skipForward
                 buttonRadius: 0
-                iconSource: "qrc:/images/svg/next.svg"
+                iconSource: "qrc:/ui/icons/svg/next.svg"
                 iconWidth: 16
                 iconHeight: 16
 
                 ToolTipType {
-                    toolTipText: "Skip To Next mediaPlayer"
+                    toolTipText: "Skip To Next Video"
                 }
 
                 MouseArea {
@@ -265,10 +296,6 @@ Rectangle {
             //     visible: Screen.primaryOrientation === Qt.LandscapeOrientation
             //     iconSource: "qrc:/images/svg/Loop_Icon_Dark.svg"
             // }
-        }
-
-        Item {
-            Layout.fillWidth: true
         }
 
         AudioControls {
@@ -292,14 +319,19 @@ Rectangle {
 
             backgroundColor: "transparent"
 
-            iconSource: "qrc:/images/svg/subtitles.svg"
+            iconSource: "qrc:/ui/icons/svg/subtitles.svg"
             iconWidth: 23
             iconHeight: 23
 
+            ToolTipType {
+                toolTipText: metaDataPopup.visible? "Hide Subtitles" : "Show Subtitles"
+            }
+
             MouseArea {
                 anchors.fill: parent
+                cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
 
-                onClicked: subtitlePopup.visible = !subtitlePopup.visible
+                onClicked: metaDataPopup.visible = !metaDataPopup.visible
             }
         }
 
@@ -314,14 +346,14 @@ Rectangle {
             Layout.alignment: Qt.AlignVCenter
             buttonRadius: 5
 
-            backgroundColor: "transparent"
+            backgroundColor: playlist.visible? "gray" : "transparent"
 
-            iconSource: "qrc:/images/svg/playlist.svg"
+            iconSource: "qrc:/ui/icons/svg/playlist.svg"
             iconWidth: 16
             iconHeight: 16
 
             ToolTipType {
-                toolTipText: playlist.width > 0? "Hide Playlist" : "Open Playlist"
+                toolTipText: playlist.visible? "Hide Playlist" : "Open Playlist"
             }
 
             MouseArea {
@@ -329,7 +361,7 @@ Rectangle {
                 cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
 
                 onClicked: {
-                    playlist.width > 0? hidePlaylist.start() : showPlayList.start()
+                    playlist.visible? hidePlaylist.start() : showPlayList.start()
                 }
             }
         }
