@@ -103,8 +103,12 @@ void PlaylistModel::deleteItem(const qsizetype &index)
 
 void PlaylistModel::clearPlaylist()
 {
+    if (m_data.empty()) {
+        return;
+    }
+
     beginRemoveRows (QModelIndex(), 0, m_data.size() - 1);
-        m_data.clear();
+    m_data.clear();
     endRemoveRows();
 }
 
@@ -125,7 +129,7 @@ QString PlaylistModel::getNext()
         return QString();
     }
 
-    m_currentIndex = (m_currentIndex + 1) % m_data.size();
+    m_currentIndex = m_currentIndex == m_data.size() - 1? 0 : m_currentIndex + 1;
     return m_data.at(m_currentIndex);
 }
 

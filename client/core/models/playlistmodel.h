@@ -48,7 +48,7 @@ private:
     QVector<QString> m_data;
     QSharedPointer<FilesManager> m_filesManager;
     QSharedPointer<Settings> m_settings;
-    qsizetype m_currentIndex;
+    qsizetype m_currentIndex = 0;
 };
 
 #endif // LISTMODEL_H

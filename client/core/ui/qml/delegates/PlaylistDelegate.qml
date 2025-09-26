@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Layouts
 import QtMultimedia
 
+import "../components"
+
 Rectangle {
     id: root
     color: "#2C3930"
@@ -9,7 +11,7 @@ Rectangle {
 
     width: parent? parent.width - 20 : 20
     height: 45
-    border.color: isCurrentlyPlaying? "orange" : "transparent"
+    border.color: isCurrentlyPlaying? "white" : "transparent"
     border.width: 0.5
     radius: 7
 

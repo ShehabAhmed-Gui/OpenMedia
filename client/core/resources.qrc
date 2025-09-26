@@ -24,7 +24,6 @@
         <file>ui/qml/components/PlayList.qml</file>
         <file>ui/qml/components/SubtitlePopup.qml</file>
         <file>ui/qml/components/ToolTipType.qml</file>
-        <file>ui/qml/components/VideosDelegate.qml</file>
         <file>ui/qml/controls/AudioControls.qml</file>
         <file>ui/qml/controls/BottomControls.qml</file>
         <file>ui/qml/controls/PlaybackSpeedControls.qml</file>
@@ -37,5 +36,8 @@
         <file>ui/fonts/Poppins-Medium.ttf</file>
         <file>ui/fonts/Poppins-Regular.ttf</file>
         <file>ui/fonts/Poppins-SemiBold.ttf</file>
+        <file>ui/icons/svg/loop_active.svg</file>
+        <file>ui/icons/svg/loop_disabled.svg</file>
+        <file>ui/qml/delegates/PlaylistDelegate.qml</file>
     </qresource>
 </RCC>

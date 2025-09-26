@@ -16,6 +16,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Core)
 
 set(SOURCES
     client/core/main.cpp
@@ -43,6 +44,7 @@ qt_add_executable(OpenMedia
     client/core/controllers/filescontroller.h client/core/controllers/filescontroller.cpp
     client/core/models/metadatamodel.h client/core/models/metadatamodel.cpp
     client/core/models/metadatafilterproxymodel.h client/core/models/metadatafilterproxymodel.cpp
+    client/core/videomanager.h client/core/videomanager.cpp
 )
 
 # qt_add_translations(OpenMedia TS_FILES client/core//translation/OpenMedia_en_US.ts)
@@ -62,6 +64,7 @@ target_link_libraries(OpenMedia PRIVATE
     Qt6::Multimedia
     Qt6::MultimediaWidgets
 )
+target_link_libraries(OpenMedia PRIVATE Qt6::Core)
 target_link_libraries(OpenMedia PRIVATE Qt6::Core)
 target_link_libraries(OpenMedia PRIVATE Qt6::Core)
 target_link_libraries(OpenMedia PRIVATE Qt6::Core)

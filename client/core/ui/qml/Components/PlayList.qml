@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 
-import "../components"
+import "../delegates"
 
 Rectangle {
     id: root
@@ -97,20 +97,30 @@ Rectangle {
             spacing: 20
             clip: true
 
-            delegate: VideosDelegate {
+            delegate: PlaylistDelegate {
             }
 
             contentHeight: PlaylistModel.count * (delegate.height + spacing) + 10
 
             onPlayNext: {
-                mediaPlayer.source = Qt.url(PlaylistModel.getNext())
+                var source = Qt.url(PlaylistModel.getNext());
+                if (source.toString() === "") {
+                    return;
+                }
+
+                mediaPlayer.source = source
                 Qt.callLater(() => {
                     mediaPlayer.play()
                 });
             }
 
             onPlayPrevious: {
-                mediaPlayer.source = Qt.url(PlaylistModel.getPrevious())
+                var source = Qt.url(PlaylistModel.getNext());
+                if (source.toString() === "") {
+                    return;
+                }
+
+                mediaPlayer.source = source
                 Qt.callLater(() => {
                     mediaPlayer.play()
                 });

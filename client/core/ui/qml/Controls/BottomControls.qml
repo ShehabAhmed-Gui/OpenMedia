@@ -290,12 +290,23 @@ Rectangle {
                 }
             }
 
-            // CustomButton {
-            //     id: loop
+            CustomButton {
+                id: loopBtn
+                iconSource: "qrc:/ui/icons/svg/loop_disabled.svg"
+                iconHeight: 20
+                iconWidth: 20
 
-            //     visible: Screen.primaryOrientation === Qt.LandscapeOrientation
-            //     iconSource: "qrc:/images/svg/Loop_Icon_Dark.svg"
-            // }
+                ToolTipType {
+                    toolTipText: "Enable repeat"
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
+
+                    //onClicked:
+                }
+            }
         }
 
         AudioControls {
