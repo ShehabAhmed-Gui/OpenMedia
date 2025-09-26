@@ -80,7 +80,7 @@ Item {
 
         Text {
             id: volumeLevelText
-            text: volumeSlider.value
+            text: volumeSlider.value + "%"
             font.pixelSize: 13
             font.family: "Poppins"
             font.weight: Font.Medium
