@@ -6,16 +6,20 @@
 CoreController::CoreController(QQmlApplicationEngine *engine,
                                const QSharedPointer<Settings> settings,
                                const QSharedPointer<FilesManager> filesManager,
+                               const QSharedPointer<VideoManager> videoManager,
                                QObject *parent)
     : QObject{parent}
     , m_settings(settings)
     , m_filesManager(filesManager)
+    , m_videoManager(videoManager)
     , m_engine(engine)
 {
     loadFonts();
 
     initModels();
     initControllers();
+
+    connect(m_filesManager.get(), &FilesManager::videoPassedAsArg, this, &CoreController::videoPassedAsArg);
 }
 
 void CoreController::loadFonts()
@@ -56,4 +60,7 @@ void CoreController::initControllers()
 
     m_filesController.reset(new FilesController(m_filesManager, this));
     m_engine->rootContext()->setContextProperty("FilesController", m_filesController.get());
+
+    m_videoController.reset(new VideoController(m_videoManager, this));
+    m_engine->rootContext()->setContextProperty("VideoController", m_videoController.get());
 }

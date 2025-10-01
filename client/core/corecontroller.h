@@ -7,6 +7,7 @@
 
 #include "settings.h"
 #include "filesmanager.h"
+#include "videomanager.h"
 
 // Models
 #include "models/playlistmodel.h"
@@ -18,6 +19,7 @@
 // Controllers
 #include "controllers/settingscontroller.h"
 #include "controllers/filescontroller.h"
+#include "controllers/videocontroller.h"
 
 class CoreController : public QObject
 {
@@ -25,8 +27,11 @@ class CoreController : public QObject
 public:
     explicit CoreController(QQmlApplicationEngine *engine,
                             const QSharedPointer<Settings> settings,
-                            const QSharedPointer<FilesManager> filesManager,
+                            const QSharedPointer<FilesManager> filesManager, const QSharedPointer<VideoManager> videoManager,
                             QObject *parent = nullptr);
+
+signals:
+    void videoPassedAsArg(const QString &path);
 
 private:
     void loadFonts();
@@ -43,6 +48,10 @@ private:
 
     QSharedPointer<Settings> m_settings;
     QSharedPointer<SettingsController> m_settingsController;
+
+
+    QSharedPointer<VideoManager> m_videoManager;
+    QSharedPointer<VideoController> m_videoController;
 
     void initModels();
     void initControllers();

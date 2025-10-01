@@ -144,11 +144,13 @@ Rectangle {
             Connections {
                 target: mediaPlayer
                 function onPositionChanged() {
-                    // Playing next mediaPlayer once current mediaPlayer ends
-                    if (mediaPlayer.position === mediaPlayer.duration){
-                        playlist.listView.playNext()
-                    }
+                    // Playing next mediaPlayer once current mediaPlayer ends in case loop is disabled
 
+                    if (!VideoController.loopState) {
+                        if (mediaPlayer.position === mediaPlayer.duration){
+                            playlist.listView.playNext()
+                        }
+                    }
 
                     videoSlider.value = mediaPlayer.position
                 }
@@ -292,19 +294,20 @@ Rectangle {
 
             CustomButton {
                 id: loopBtn
-                iconSource: "qrc:/ui/icons/svg/loop_disabled.svg"
-                iconHeight: 20
-                iconWidth: 20
+                iconSource: VideoController.loopState? "qrc:/ui/icons/svg/loop_active.svg"
+                                                     : "qrc:/ui/icons/svg/loop_disabled.svg"
+                iconHeight: 23
+                iconWidth: 23
 
                 ToolTipType {
-                    toolTipText: "Enable repeat"
+                    toolTipText: VideoController.loopState? "Disable repeat" : "Enable repeat"
                 }
 
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
 
-                    //onClicked:
+                    onClicked: VideoController.setLoopState(!VideoController.loopState)
                 }
             }
         }

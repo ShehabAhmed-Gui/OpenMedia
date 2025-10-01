@@ -81,21 +81,34 @@ ApplicationWindow {
         }
     }
 
-    // FIXME: use CoreController here
-    // Connections {
-    //     id: playVideoFromArg
-    //     target: AppManager
+    Connections {
+        id: loopConnections
+        target: VideoController
 
-    //     function onVideoPassedAsArg (arg) {
-    //         hidePlaylist.start()
-    //         mediaPlayer.stop();
-    //         Qt.callLater(() => {
-    //             mediaPlayer.source = Qt.url(arg);
-    //             mediaPlayer.play();
-    //             mediaPlayer.position = 0;
-    //         });
-    //     }
-    // }
+        function onLoopStateChanged() {
+            switch (VideoController.loopState) {
+            case 1: mediaPlayer.loops = MediaPlayer.Infinite
+                break;
+            case 2: mediaPlayer.loops = 1;
+                break;
+            }
+        }
+    }
+
+    Connections {
+        id: playVideoFromArg
+        target: CoreController
+
+        function onVideoPassedAsArg(arg) {
+            hidePlaylist.start()
+            mediaPlayer.stop();
+            Qt.callLater(() => {
+                mediaPlayer.source = Qt.url(arg);
+                mediaPlayer.play();
+                mediaPlayer.position = 0;
+            });
+        }
+    }
 
     Timer {
         id: hoverTimer

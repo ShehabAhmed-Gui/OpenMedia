@@ -8,12 +8,15 @@
 
 #include "corecontroller.h"
 
-#include <QThread>
+#include <QLoggingCategory>
 
 using namespace std;
 
 int main(int argc, char *argv[])
 {
+    // Disable all multimedia logs
+    QLoggingCategory::setFilterRules("qt.multimedia.*=false");
+
     QApplication app(argc, argv);
 
     QQmlApplicationEngine *engine = new QQmlApplicationEngine(&app);
@@ -30,12 +33,17 @@ int main(int argc, char *argv[])
     QSharedPointer<FilesManager> filesManager;
     filesManager.reset(new FilesManager(settings, &app));
 
+    QSharedPointer<VideoManager> videoManager;
+    videoManager.reset(new VideoManager(&app));
+
 #ifdef Q_OS_LINUX
     filesManager->setupDesktopFile();
 #endif
 
     QScopedPointer<CoreController> coreController;
-    coreController.reset(new CoreController(engine, settings, filesManager));
+    coreController.reset(new CoreController(engine, settings, filesManager, videoManager));
+
+    qmlRegisterSingletonInstance("com.qt.openmedia", 1, 0, "CoreController", coreController.get());
 
     engine->load(url);
 

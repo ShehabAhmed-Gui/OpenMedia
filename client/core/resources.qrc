@@ -39,5 +39,6 @@
         <file>ui/icons/svg/loop_active.svg</file>
         <file>ui/icons/svg/loop_disabled.svg</file>
         <file>ui/qml/delegates/PlaylistDelegate.qml</file>
+        <file>ui/icons/svg/music_media.svg</file>
     </qresource>
 </RCC>

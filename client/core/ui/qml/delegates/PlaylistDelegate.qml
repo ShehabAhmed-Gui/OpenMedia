@@ -16,6 +16,7 @@ Rectangle {
     radius: 7
 
     property bool isCurrentlyPlaying: mediaPlayer.source.toString().toLowerCase() === path.toLowerCase()
+    property bool isMusicFile: path.endsWith(".mp3")
 
     function setCurrentIndex() {
         listView.currentIndex = index
@@ -57,9 +58,15 @@ Rectangle {
         anchors.leftMargin: 5
         anchors.verticalCenter: parent.verticalCenter
 
-        iconSource: isCurrentlyPlaying && videoState === MediaPlayer.PlayingState
-            ? "qrc:/ui/icons/svg/pause.svg"
-            : "qrc:/ui/icons/svg/play.svg"
+        iconSource: {
+            if (isMusicFile && (!isCurrentlyPlaying || videoState !== MediaPlayer.PlayingState)) {
+                return "qrc:/ui/icons/svg/music_media.svg"
+            } else if (isCurrentlyPlaying && videoState === MediaPlayer.PlayingState) {
+                return "qrc:/ui/icons/svg/pause.svg"
+            } else {
+                return "qrc:/ui/icons/svg/play.svg"
+            }
+        }
 
         iconWidth: isCurrentlyPlaying && videoState === MediaPlayer.PlayingState? 22 : 24
         iconHeight: isCurrentlyPlaying && videoState === MediaPlayer.PlayingState? 22 : 24
@@ -68,7 +75,7 @@ Rectangle {
 
         ToolTipType {
             toolTipText: {
-                if (path.endsWith(".mp3") && videoState === MediaPlayer.PausedState) {
+                if (isMusicFile && (!isCurrentlyPlaying || videoState !== MediaPlayer.PlayingState)) {
                     "Play this music"
                 } else if (path.endsWith(".mp3") && videoState === MediaPlayer.PlayingState && isCurrentlyPlaying) {
                     "Stop this music"

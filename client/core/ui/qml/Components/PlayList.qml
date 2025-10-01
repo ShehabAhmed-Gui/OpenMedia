@@ -115,7 +115,7 @@ Rectangle {
             }
 
             onPlayPrevious: {
-                var source = Qt.url(PlaylistModel.getNext());
+                var source = Qt.url(PlaylistModel.getPrevious());
                 if (source.toString() === "") {
                     return;
                 }
