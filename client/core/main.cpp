@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
     filesManager.reset(new FilesManager(settings, &app));
 
     QSharedPointer<VideoManager> videoManager;
-    videoManager.reset(new VideoManager(&app));
+    videoManager.reset(new VideoManager(settings, &app));
 
 #ifdef Q_OS_LINUX
     filesManager->setupDesktopFile();

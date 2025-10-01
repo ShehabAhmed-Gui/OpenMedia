@@ -11,13 +11,6 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS
     Multimedia MultimediaWidgets)
 
 find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
 
 set(SOURCES
     client/core/main.cpp
@@ -66,13 +59,6 @@ target_link_libraries(OpenMedia PRIVATE
     Qt6::Multimedia
     Qt6::MultimediaWidgets
 )
-target_link_libraries(OpenMedia PRIVATE Qt6::Core)
-target_link_libraries(OpenMedia PRIVATE Qt6::Core)
-target_link_libraries(OpenMedia PRIVATE Qt6::Core)
-target_link_libraries(OpenMedia PRIVATE Qt6::Core)
-target_link_libraries(OpenMedia PRIVATE Qt6::Core)
-target_link_libraries(OpenMedia PRIVATE Qt6::Core)
-target_link_libraries(OpenMedia PRIVATE Qt6::Core)
 
 include(GNUInstallDirs)
 install(TARGETS OpenMedia

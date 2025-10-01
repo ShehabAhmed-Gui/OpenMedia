@@ -1,8 +1,13 @@
 #include "videomanager.h"
 
-VideoManager::VideoManager(QObject *parent)
+VideoManager::VideoManager(QSharedPointer<Settings> settings,
+                           QObject *parent)
     : QObject{parent}
-{}
+    , m_settings(settings)
+{
+    Loop savedState = static_cast<Loop>(m_settings->getSetting("Video", "loop").toInt());
+    setLoopState(savedState);
+}
 
 VideoManager::Loop VideoManager::loopState() const
 {
@@ -13,6 +18,10 @@ void VideoManager::setLoopState(Loop newLoopState)
 {
     if (m_loopState == newLoopState)
         return;
+
     m_loopState = newLoopState;
     emit loopStateChanged();
+
+    // Update loop state in Settings
+    m_settings->saveSetting("Video", "loop", static_cast<int>(newLoopState));
 }

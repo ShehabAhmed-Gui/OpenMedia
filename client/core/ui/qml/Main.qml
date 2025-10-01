@@ -38,11 +38,11 @@ ApplicationWindow {
         subtitleProxyModel.sourceModel = null
         audioProxyModel.sourceModel = null
 
-        // Save audio settings
+        // Save Audio settings
         SettingsController.saveSetting("Audio", "volume", (audioOutput.volume * 100).toFixed());
         SettingsController.saveSetting("Audio", "muted", audioOutput.muted);
 
-        // Save mediaPlayer settings
+        // Save Video settings
         SettingsController.saveSetting("Video", "position", mediaPlayer.position / 1000)
         SettingsController.saveSetting("Video", "video", mediaPlayer.source)
     }
@@ -174,6 +174,7 @@ ApplicationWindow {
             audioOutput: audioOutput
 
             source: Qt.url(SettingsController.getSetting("Video", "video"))
+            loops: VideoController.loopState? MediaPlayer.Infinite : 1
 
             onSeekableChanged: {
                 if (mediaPlayer.seekable) {
