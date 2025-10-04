@@ -186,9 +186,6 @@ ApplicationWindow {
             }
 
             onTracksChanged: {
-                console.log("Available subtitle tracks:", mediaPlayer.subtitleTracks.length)
-                console.log("Available Audio tracks:", mediaPlayer.audioTracks.length)
-
                 MetaDataModel.setSubtitles(mediaPlayer.subtitleTracks)
                 MetaDataModel.setAudioTracks(mediaPlayer.audioTracks)
             }

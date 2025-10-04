@@ -157,18 +157,16 @@ Rectangle {
                 id: backgroundRect
                 x: videoSlider.leftPadding
                 y: videoSlider.topPadding + videoSlider.availableHeight / 2 - height / 2
-                implicitWidth: parent.width - 120
-                implicitHeight: 7
 
                 width: videoSlider.availableWidth
-                height: implicitHeight
+                height: 7
                 radius: 2
 
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: true
 
-                    onPositionChanged: {
+                    onPositionChanged: mouse => {
                         var relativeX = Math.max(0, Math.min(mouse.x, videoSlider.width))
                         var hoverValue = Math.floor((relativeX / videoSlider.width) * videoSlider.to)
                         framePreview.source = "image://framesprovider/" + hoverValue
@@ -255,9 +253,138 @@ Rectangle {
     }
 
     RowLayout {
+        id: controlButtons
+        spacing: Screen.primaryOrientation === Qt.LandscapeOrientation? 17 : 10
+        anchors.verticalCenter: playerControls.verticalCenter
+        anchors.centerIn: playerControls
+        Layout.fillWidth: true
+
+        CustomButton {
+            id: skipBackward
+            buttonRadius: 0
+
+            iconSource: "qrc:/ui/icons/svg/previous.svg"
+            iconWidth: 16
+            iconHeight: 16
+
+            ToolTipType {
+                toolTipText: "Skip To Previous Video"
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
+
+                onClicked: {
+                    playlist.listView.playPrevious()
+                }
+            }
+        }
+
+        CustomButton {
+            id: seekBackward
+            iconSource: "qrc:/ui/icons/backward_10s.png"
+            iconWidth: 17
+            iconHeight: 17
+
+            ToolTipType {
+                toolTipText: "Seek 10s backward"
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: root.seekBackward()
+                cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
+            }
+        }
+
+        CustomButton {
+            id: startStopButton
+            iconSource: mediaPlayer.playbackState === MediaPlayer.PlayingState
+                        ? "qrc:/ui/icons/svg/stop.svg"
+                        : "qrc:/ui/icons/svg/play.svg"
+            iconWidth: 30
+            iconHeight: 30
+
+            ToolTipType {
+                toolTipText: mediaPlayer.playbackState === MediaPlayer.PlayingState? "Stop" : "Play"
+            }
+
+            onHoverBackgroundColor: "transparent"
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
+
+                onClicked: mediaPlayer.playbackState === MediaPlayer.PlayingState
+                           ? mediaPlayer.pause()
+                           : mediaPlayer.play()
+            }
+        }
+
+        CustomButton {
+            id: seekForward
+            iconSource: "qrc:/ui/icons/forward_10s.png"
+            iconWidth: 17
+            iconHeight: 17
+
+            ToolTipType {
+                toolTipText: "Seek 10s forward"
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: root.seekForward()
+                cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
+            }
+        }
+
+        CustomButton {
+            id: skipForward
+            buttonRadius: 0
+            iconSource: "qrc:/ui/icons/svg/next.svg"
+            iconWidth: 16
+            iconHeight: 16
+
+            ToolTipType {
+                toolTipText: "Skip To Next Video"
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
+                onClicked: {
+                    playlist.listView.playNext()
+                }
+            }
+        }
+
+        CustomButton {
+            id: loopBtn
+            iconSource: VideoController.loopState? "qrc:/ui/icons/svg/loop_active.svg"
+                                                 : "qrc:/ui/icons/svg/loop_disabled.svg"
+            iconHeight: 23
+            iconWidth: 23
+
+            ToolTipType {
+                toolTipText: VideoController.loopState? "Disable repeat" : "Enable repeat"
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
+
+                onClicked: VideoController.setLoopState(!VideoController.loopState)
+            }
+        }
+    }
+
+    RowLayout {
         id: playerControls
         anchors.fill: root
         width: parent.width
+        anchors.top: videoSliderContainer.bottom
+        anchors.topMargin: 15
         anchors.centerIn: parent
 
         Item {
@@ -279,133 +406,6 @@ Rectangle {
 
         Item {
             Layout.fillWidth: true
-        }
-
-        RowLayout {
-            id: controlButtons
-            spacing: Screen.primaryOrientation === Qt.LandscapeOrientation? 17 : 10
-            anchors.horizontalCenter: parent.horizontalCenter
-            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-            Layout.fillWidth: true
-
-            CustomButton {
-                id: skipBackward
-                buttonRadius: 0
-
-                iconSource: "qrc:/ui/icons/svg/previous.svg"
-                iconWidth: 16
-                iconHeight: 16
-
-                ToolTipType {
-                    toolTipText: "Skip To Previous Video"
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
-
-                    onClicked: {
-                        playlist.listView.playPrevious()
-                    }
-                }
-            }
-
-            CustomButton {
-                id: seekBackward
-                iconSource: "qrc:/ui/icons/backward_10s.png"
-                iconWidth: 17
-                iconHeight: 17
-
-                ToolTipType {
-                    toolTipText: "Seek 10s backward"
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: root.seekBackward()
-                    cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
-                }
-            }
-
-            CustomButton {
-                id: startStopButton
-                iconSource: mediaPlayer.playbackState === MediaPlayer.PlayingState
-                            ? "qrc:/ui/icons/svg/stop.svg"
-                            : "qrc:/ui/icons/svg/play.svg"
-                iconWidth: 30
-                iconHeight: 30
-
-                ToolTipType {
-                    toolTipText: mediaPlayer.playbackState === MediaPlayer.PlayingState? "Stop" : "Play"
-                }
-
-                onHoverBackgroundColor: "transparent"
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
-
-                    onClicked: mediaPlayer.playbackState === MediaPlayer.PlayingState
-                               ? mediaPlayer.pause()
-                               : mediaPlayer.play()
-                }
-            }
-
-            CustomButton {
-                id: seekForward
-                iconSource: "qrc:/ui/icons/forward_10s.png"
-                iconWidth: 17
-                iconHeight: 17
-
-                ToolTipType {
-                    toolTipText: "Seek 10s forward"
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: root.seekForward()
-                    cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
-                }
-            }
-
-            CustomButton {
-                id: skipForward
-                buttonRadius: 0
-                iconSource: "qrc:/ui/icons/svg/next.svg"
-                iconWidth: 16
-                iconHeight: 16
-
-                ToolTipType {
-                    toolTipText: "Skip To Next Video"
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: {
-                        playlist.listView.playNext()
-                    }
-                }
-            }
-
-            CustomButton {
-                id: loopBtn
-                iconSource: VideoController.loopState? "qrc:/ui/icons/svg/loop_active.svg"
-                                                     : "qrc:/ui/icons/svg/loop_disabled.svg"
-                iconHeight: 23
-                iconWidth: 23
-
-                ToolTipType {
-                    toolTipText: VideoController.loopState? "Disable repeat" : "Enable repeat"
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
-
-                    onClicked: VideoController.setLoopState(!VideoController.loopState)
-                }
-            }
         }
 
         AudioControls {

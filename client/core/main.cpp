@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 
     QApplication app(argc, argv);
 
-    QQmlApplicationEngine *engine = new QQmlApplicationEngine(&app);
+    QQmlApplicationEngine *engine = new QQmlApplicationEngine();
 
     const QUrl url(QStringLiteral("qrc:/ui/qml/Main.qml"));
 
