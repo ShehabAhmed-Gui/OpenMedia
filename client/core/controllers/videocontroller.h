@@ -18,8 +18,13 @@ public:
     Q_INVOKABLE VideoManager::Loop loopState() const;
     Q_INVOKABLE void setLoopState(VideoManager::Loop newLoopState);
 
+
+    Q_INVOKABLE void setSourceVideo(const QString &path);
+    Q_INVOKABLE QImage readVideoFrameAt(quint64 timestampMs);
+
 signals:
     void loopStateChanged();
+    void frameUpdated(int timestamp);
 
 private:
     QSharedPointer<VideoManager> m_videoManager;

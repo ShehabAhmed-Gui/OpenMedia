@@ -20,8 +20,8 @@ ApplicationWindow {
 
     width: 1500
     height: 800
-    minimumHeight: 460
-    minimumWidth: 700
+    minimumHeight: 500
+    minimumWidth: 850
     visible: true
     title: "OpenMedia"
     color: "#000000"
@@ -204,7 +204,10 @@ ApplicationWindow {
                 mediaPlayer.pause()
             }
 
-            onSourceChanged: SettingsController.saveSetting("Video", "video", mediaPlayer.source.toString())
+            onSourceChanged: {
+                VideoController.setSourceVideo(mediaPlayer.source)
+                SettingsController.saveSetting("Video", "video", mediaPlayer.source.toString())
+            }
         }
 
         Keys.onSpacePressed: {

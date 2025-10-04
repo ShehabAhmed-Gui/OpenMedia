@@ -5,6 +5,8 @@ import QtMultimedia
 
 import "../components"
 
+import com.qt.openmedia 1.0
+
 Rectangle {
     id: root
     width: parent.width
@@ -92,6 +94,28 @@ Rectangle {
         color: "#111111"
     }
 
+    Image {
+        id: framePreview
+        asynchronous: true
+        cache: true
+        retainWhileLoading: true
+
+        anchors.bottom: previewTime.top
+        anchors.bottomMargin: 3
+    }
+
+    Text {
+        id: previewTime
+        anchors.bottom: videoSliderContainer.top
+        anchors.horizontalCenter: framePreview.horizontalCenter
+        anchors.topMargin: 3
+
+        font.family: "Poppins"
+        font.pixelSize: 14
+        font.weight: Font.Normal
+        color: "#ffffff"
+    }
+
     RowLayout {
         id: videoSliderContainer
         width: parent.width - 10
@@ -116,24 +140,96 @@ Rectangle {
             Layout.minimumWidth: 10
         }
 
-        CustomSliderType {
+        Slider {
             id: videoSlider
+            live: true
 
+            property bool enableHandler: false
             property int videoDuration: mediaPlayer.duration
 
-            sliderWidth: parent.width - 120
-            sliderHeight: 7
+            Layout.minimumWidth: parent.width - 120
+            Layout.minimumHeight: 7
 
-            sliderBackgroundRect.width: parent.width - 120
+            from: 0
+            to: videoDuration
 
-            onMoved: () =>{
+            background: Rectangle {
+                id: backgroundRect
+                x: videoSlider.leftPadding
+                y: videoSlider.topPadding + videoSlider.availableHeight / 2 - height / 2
+                implicitWidth: parent.width - 120
+                implicitHeight: 7
+
+                width: videoSlider.availableWidth
+                height: implicitHeight
+                radius: 2
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+
+                    onPositionChanged: {
+                        var relativeX = Math.max(0, Math.min(mouse.x, videoSlider.width))
+                        var hoverValue = Math.floor((relativeX / videoSlider.width) * videoSlider.to)
+                        framePreview.source = "image://framesprovider/" + hoverValue
+                        framePreview.x = mouse.x
+                        framePreview.y = videoSlider.y
+                        framePreview.visible = true
+
+                        previewTime.text = formatTime(Math.floor(hoverValue)).split("/")[1]
+                        previewTime.x = mouse.x
+                        previewTime.y = framePreview.y
+                        previewTime.visible = true
+                    }
+
+                    onEntered: {
+                        cursorShape = Qt.PointingHandCursor
+                        afkTimer.stop()
+                        videoSlider.enableHandler = true
+                    }
+
+                    onExited: {
+                        cursorShape = Qt.ArrowCursor
+                        afkTimer.start()
+                        videoSlider.enableHandler = false
+                        framePreview.visible = false
+                        previewTime.visible = false
+                    }
+                }
+
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.40448; color: "#333333" }
+                }
+
+                Rectangle {
+                    width: videoSlider.visualPosition * parent.width
+                    height: parent.height
+
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.40448; color: "#6E8BB3"  }
+                        GradientStop { position: 1; color: "#4C5D8B" }
+                    }
+                    radius: 2
+                }
+            }
+
+            handle: Rectangle {
+                visible: videoSlider.enableHandler? true : false
+                x: videoSlider.leftPadding + videoSlider.visualPosition * (videoSlider.availableWidth - width)
+                y: backgroundRect.y + backgroundRect.height / 2 - height / 2
+                implicitWidth: 12
+                implicitHeight: 12
+                radius: 15
+                color: "#A6A9C8"
+            }
+
+            onMoved: {
                 if (userChangingSlider) {
                     mediaPlayer.position = videoSlider.value
                 }
             }
-
-            from: 0
-            to: videoDuration
 
             onValueChanged: {
                 userChangingSlider = true
