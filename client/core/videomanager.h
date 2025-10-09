@@ -4,6 +4,7 @@
 #include "settings.h"
 #include <QObject>
 #include <QImage>
+#include <QFile>
 
 #include <QMutex>
 
@@ -34,23 +35,23 @@ public:
 
     void setSourceVideo(const QString &path);
 
-    QImage readVideoFrameAt(qint64 timestampMs);
+    QImage getVideoFrame(qint64 timestamp);
+
+public slots:
+    void extractVideoThumbnails(const QString &path);
 
 signals:
     void loopStateChanged();
     void frameUpdated(int timestampMs);
+    void extractingInProgress();
+    void extractedVideoThumbnails();
 
 private:
-    QMutex m_decodeMutex;
+    void decode(AVCodecContext *dec_ctx, AVFrame *frame, AVPacket *pkt);
 
     Loop m_loopState = Disabled;
 
-    AVFrame* m_frame;
-    AVFormatContext *fmtCtx;
-    AVCodecContext *codecCtx;
-    SwsContext *swsCtx;
-
-    int videoStreamIndex;
+    QMap<quint64, QImage> m_thumbnails;
 
     QSharedPointer<Settings> m_settings;
 };

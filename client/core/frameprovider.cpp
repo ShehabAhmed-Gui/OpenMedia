@@ -9,10 +9,10 @@ FrameProvider::FrameProvider(QSharedPointer<VideoManager> videoManager)
 QImage FrameProvider::requestImage(const QString &id, QSize *size, const QSize &requestedSize)
 {
     bool ok;
-    int timestampMs = id.toInt(&ok);
+    quint64 timestamp = id.toInt(&ok);
     if (!ok) return QImage();
 
-    QImage result = m_videoManager->readVideoFrameAt(timestampMs);
+    QImage result = m_videoManager->getVideoFrame(timestamp);
 
-    return result.scaled(QSize(250, 250), Qt::KeepAspectRatio);
+    return result;
 }

@@ -50,7 +50,7 @@ pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
 )
 
 qt_add_executable(OpenMedia
-    # WIN32
+    WIN32
     ${SOURCES}
     ${HEADERS}
     client/core/controllers/settingscontroller.h client/core/controllers/settingscontroller.cpp

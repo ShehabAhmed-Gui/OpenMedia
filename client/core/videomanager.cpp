@@ -1,14 +1,12 @@
 #include "videomanager.h"
+#include <thread>
+#include <vector>
+#include <mutex>
 
 VideoManager::VideoManager(QSharedPointer<Settings> settings,
                            QObject *parent)
     : QObject{parent}
     , m_settings(settings)
-    , fmtCtx(nullptr)
-    , codecCtx(nullptr)
-    , m_frame(nullptr)
-    , swsCtx(nullptr)
-    , videoStreamIndex(-1)
 {
     Loop savedState = static_cast<Loop>(m_settings->getSetting("Video", "loop").toInt());
     setLoopState(savedState);
@@ -16,18 +14,6 @@ VideoManager::VideoManager(QSharedPointer<Settings> settings,
 
 VideoManager::~VideoManager()
 {
-    // TODO: Fix crash on close
-    if (codecCtx) {
-        avcodec_free_context(&codecCtx);
-    }
-
-    if (fmtCtx) {
-        avformat_close_input(&fmtCtx);
-    }
-
-    // if (swsCtx) {
-    //     sws_freeContext(swsCtx);
-    // }
 }
 
 VideoManager::Loop VideoManager::loopState() const
@@ -46,142 +32,165 @@ void VideoManager::setLoopState(Loop newLoopState)
     // Update loop state in Settings
     m_settings->saveSetting("Video", "loop", static_cast<int>(newLoopState));
 }
-
-void VideoManager::setSourceVideo(const QString &path)
+void VideoManager::extractVideoThumbnails(const QString &path)
 {
-    // Close previous video if any
-    if (codecCtx) {
-        avcodec_free_context(&codecCtx);
-        codecCtx = nullptr;
-    }
-    if (fmtCtx) {
-        avformat_close_input(&fmtCtx);
-        fmtCtx = nullptr;
-    }
-    if (m_frame) {
-        av_frame_free(&m_frame);
-        m_frame = nullptr;
-    }
-    if (swsCtx) {
-        sws_freeContext(swsCtx);
-        swsCtx = nullptr;
-    }
+    m_thumbnails.clear();
+    std::mutex mutex;
 
-    // Open video file
-    if (avformat_open_input(&fmtCtx, path.toUtf8().data(), nullptr, nullptr) != 0) {
-        qWarning() << "Failed to open video:" << path;
+    AVFormatContext *fmtCtx = nullptr;
+    if (avformat_open_input(&fmtCtx, path.toUtf8().constData(), nullptr, nullptr) < 0)
         return;
-    }
 
     if (avformat_find_stream_info(fmtCtx, nullptr) < 0) {
-        qWarning() << "Failed to find stream info";
+        avformat_close_input(&fmtCtx);
         return;
     }
 
-    const AVCodec *codec = nullptr;
-
-    // Find video stream
-    for (unsigned int i = 0; i < fmtCtx->nb_streams; i++) {
-        codec = avcodec_find_decoder(fmtCtx->streams[i]->codecpar->codec_id);
-        if (codec && codec->type == AVMEDIA_TYPE_VIDEO) {
-            videoStreamIndex = i;
-            break;
-        }
+    int videoStreamIndex = av_find_best_stream(fmtCtx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
+    if (videoStreamIndex < 0) {
+        avformat_close_input(&fmtCtx);
+        return;
     }
 
+    emit extractingInProgress();
+
+    AVStream *videoStream = fmtCtx->streams[videoStreamIndex];
+    double duration = fmtCtx->duration / (double)AV_TIME_BASE;
+
+    const AVCodec *codec = avcodec_find_decoder(videoStream->codecpar->codec_id);
     if (!codec) {
-        qWarning() << "No video stream found";
+        avformat_close_input(&fmtCtx);
         return;
     }
 
-    // Allocate codec context
-    codecCtx = avcodec_alloc_context3(codec);
-    if (!codecCtx) return;
-
-    if (avcodec_parameters_to_context(codecCtx, fmtCtx->streams[videoStreamIndex]->codecpar) < 0) {
-        qWarning() << "Failed to copy codec parameters";
-        return;
-    }
+    AVCodecContext *codecCtx = avcodec_alloc_context3(codec);
+    avcodec_parameters_to_context(codecCtx, videoStream->codecpar);
+    codecCtx->thread_count = std::max(1u, std::thread::hardware_concurrency());
+    codecCtx->thread_type  = FF_THREAD_FRAME;
 
     if (avcodec_open2(codecCtx, codec, nullptr) < 0) {
-        qWarning() << "Failed to open codec";
+        avcodec_free_context(&codecCtx);
+        avformat_close_input(&fmtCtx);
         return;
     }
 
-    // Allocate reusable AVFrame
-    m_frame = av_frame_alloc();
-    if (!m_frame) {
-        qWarning() << "Failed to allocate AVFrame";
-        return;
-    }
+    int thumbW = codecCtx->width / 4;
+    int thumbH = codecCtx->height / 4;
 
-    // Allocate SwsContext for conversion to RGB
-    AVPixelFormat srcFmt = (AVPixelFormat)codecCtx->pix_fmt;
-    swsCtx = sws_getContext(
-        codecCtx->width,
-        codecCtx->height,
-        srcFmt,
-        codecCtx->width,
-        codecCtx->height,
-        AV_PIX_FMT_RGB24,
-        SWS_BILINEAR,
-        nullptr, nullptr, nullptr
+    SwsContext *swsCtx = sws_getContext(
+        codecCtx->width, codecCtx->height, codecCtx->pix_fmt,
+        thumbW, thumbH, AV_PIX_FMT_RGB24,
+        SWS_FAST_BILINEAR, nullptr, nullptr, nullptr
         );
+
     if (!swsCtx) {
-        qWarning() << "Failed to create SwsContext";
+        avcodec_free_context(&codecCtx);
+        avformat_close_input(&fmtCtx);
         return;
     }
-}
 
-QImage VideoManager::readVideoFrameAt(qint64 timestampMs)
-{
-    if (!fmtCtx || !codecCtx || !m_frame || !swsCtx)
-        return QImage();
+    // Multi-threaded extraction
+    int numThreads = std::max(1u, std::thread::hardware_concurrency());
+    double chunkDuration = duration / numThreads;
 
-    // Convert ms -> stream timebase
-    const AVRational stream_tb = fmtCtx->streams[videoStreamIndex]->time_base;
-    int64_t seek_target = av_rescale_q(timestampMs, AVRational{1, 1000}, stream_tb);
+    std::vector<std::thread> threads;
 
-    if (av_seek_frame(fmtCtx, videoStreamIndex, seek_target, AVSEEK_FLAG_BACKWARD) < 0) {
-        qWarning() << "Failed to seek frame";
-        return QImage();
-    }
+    auto extractChunk = [&](double startTime, double endTime) {
+        AVFormatContext *localFmtCtx = nullptr;
+        if (avformat_open_input(&localFmtCtx, path.toUtf8().constData(), nullptr, nullptr) < 0)
+            return;
 
-    avcodec_flush_buffers(codecCtx);
-
-    AVPacket packet;
-    av_init_packet(&packet);
-
-    while (true) {
-        int ret = av_read_frame(fmtCtx, &packet);
-        if (ret < 0) break; // EOF or error
-
-        if (packet.stream_index == videoStreamIndex) {
-            ret = avcodec_send_packet(codecCtx, &packet);
-            if (ret < 0) {
-                av_packet_unref(&packet);
-                break;
-            }
-
-            while (avcodec_receive_frame(codecCtx, m_frame) == 0) {
-                // Convert PTS to ms
-                int64_t frameMs = av_rescale_q(m_frame->pts, stream_tb, AVRational{1, 1000});
-
-                if (frameMs >= timestampMs) {
-                    // Convert to QImage
-                    QImage img(m_frame->width, m_frame->height, QImage::Format_RGB888);
-                    uint8_t* dest[4] = { img.bits(), nullptr, nullptr, nullptr };
-                    int destLinesize[4] = { int(img.bytesPerLine()), 0, 0, 0 };
-                    sws_scale(swsCtx, m_frame->data, m_frame->linesize, 0, m_frame->height, dest, destLinesize);
-
-                    av_packet_unref(&packet);
-                    return img;
-                }
-            }
+        if (avformat_find_stream_info(localFmtCtx, nullptr) < 0) {
+            avformat_close_input(&localFmtCtx);
+            return;
         }
 
-        av_packet_unref(&packet);
+        AVCodecContext *localCodecCtx = avcodec_alloc_context3(codec);
+        avcodec_parameters_to_context(localCodecCtx, localFmtCtx->streams[videoStreamIndex]->codecpar);
+        localCodecCtx->thread_count = 1;
+        localCodecCtx->thread_type  = FF_THREAD_FRAME;
+        avcodec_open2(localCodecCtx, codec, nullptr);
+
+        AVPacket *packet = av_packet_alloc();
+        AVFrame *frame = av_frame_alloc();
+
+        SwsContext *localSwsCtx = sws_getContext(
+            localCodecCtx->width, localCodecCtx->height, localCodecCtx->pix_fmt,
+            thumbW, thumbH, AV_PIX_FMT_RGB24,
+            SWS_FAST_BILINEAR, nullptr, nullptr, nullptr
+            );
+
+        double t = startTime;
+        while (t < endTime) {
+            int64_t seekTarget = static_cast<int64_t>(t / av_q2d(videoStream->time_base));
+            av_seek_frame(localFmtCtx, videoStreamIndex, seekTarget, AVSEEK_FLAG_BACKWARD);
+            avcodec_flush_buffers(localCodecCtx);
+
+            bool frameCaptured = false;
+            int maxFrames = 30;
+
+            while (!frameCaptured && maxFrames-- > 0 && av_read_frame(localFmtCtx, packet) >= 0) {
+                if (packet->stream_index != videoStreamIndex) { av_packet_unref(packet); continue; }
+                avcodec_send_packet(localCodecCtx, packet);
+                while (avcodec_receive_frame(localCodecCtx, frame) >= 0) {
+                    double ptsSec = (frame->best_effort_timestamp != AV_NOPTS_VALUE)
+                    ? frame->best_effort_timestamp * av_q2d(videoStream->time_base)
+                    : frame->pkt_dts * av_q2d(videoStream->time_base);
+
+                    if (ptsSec >= t || !frameCaptured) {
+                        QImage img(thumbW, thumbH, QImage::Format_RGB888);
+                        uint8_t *dst[4] = { img.bits(), nullptr, nullptr, nullptr };
+                        int dstLinesize[4] = { static_cast<int>(img.bytesPerLine()), 0, 0, 0 };
+
+                        sws_scale(localSwsCtx, frame->data, frame->linesize, 0,
+                                  localCodecCtx->height, dst, dstLinesize);
+
+                        std::lock_guard<std::mutex> lock(mutex);
+                        m_thumbnails[(quint64)(t)] = img.copy();
+                        frameCaptured = true;
+                        break;
+                    }
+                }
+                av_packet_unref(packet);
+            }
+
+            t += 1.0; // next second
+        }
+
+        sws_freeContext(localSwsCtx);
+        av_frame_free(&frame);
+        av_packet_free(&packet);
+        avcodec_free_context(&localCodecCtx);
+        avformat_close_input(&localFmtCtx);
+    };
+
+    // Launch threads
+    for (int i = 0; i < numThreads; ++i) {
+        double start = i * chunkDuration;
+        double end   = (i == numThreads - 1) ? duration : (i + 1) * chunkDuration;
+        threads.emplace_back(extractChunk, start, end);
     }
 
-    return QImage(); // failed
+    for (auto &t : threads)
+        t.join();
+
+    sws_freeContext(swsCtx);
+    avcodec_free_context(&codecCtx);
+    avformat_close_input(&fmtCtx);
+
+    qDebug() << "Extracted" << m_thumbnails.size() << "thumbnails";
+    emit extractedVideoThumbnails();
 }
+
+QImage VideoManager::getVideoFrame(qint64 timestamp)
+{
+    QImage thumbnail = m_thumbnails[timestamp / 1000];
+
+    if (thumbnail.isNull()) {
+        qDebug() << "Could not find a frame at this timestamp";
+        return QImage(QSize(250, 250), QImage::Format_RGB888);
+    }
+
+    return thumbnail;
+}
+

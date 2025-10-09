@@ -80,6 +80,26 @@ Rectangle {
         onTriggered: userChangingSlider = false
     }
 
+    property Timer extractedThumbnailsTimer: Timer {
+        interval: 2000
+        repeat: false
+        onTriggered: extractingStatus.visible = false
+    }
+
+    Connections {
+        target: VideoController
+
+        function onExtractingInProgress() {
+            extractingStatus.visible = true
+            extractingStatus.text = "Extracting video thumbnails..."
+        }
+
+        function onExtractedVideoThumbnails() {
+            extractingStatus.text = "Extracted video thumbnails";
+            extractedThumbnailsTimer.start()
+        }
+    }
+
     MouseArea {
         id: bottomControlsMouseArea
         anchors.fill: parent
@@ -170,13 +190,13 @@ Rectangle {
                         var relativeX = Math.max(0, Math.min(mouse.x, videoSlider.width))
                         var hoverValue = Math.floor((relativeX / videoSlider.width) * videoSlider.to)
                         framePreview.source = "image://framesprovider/" + hoverValue
-                        framePreview.x = mouse.x
-                        framePreview.y = videoSlider.y
+                        framePreview.x = mouse.x - 60
+                        framePreview.y = mouse.y
                         framePreview.visible = true
 
                         previewTime.text = formatTime(Math.floor(hoverValue)).split("/")[1]
-                        previewTime.x = mouse.x
-                        previewTime.y = framePreview.y
+                        previewTime.x = mouse.x - 60
+                        previewTime.y = mouse.y
                         previewTime.visible = true
                     }
 
@@ -388,10 +408,26 @@ Rectangle {
         anchors.centerIn: parent
 
         Item {
-            visible: Screen.primaryOrientation === Qt.LandscapeOrientation
             Layout.fillWidth: true
-            Layout.minimumWidth: 40
-            Layout.maximumWidth: 70
+            Layout.minimumWidth: 20
+            Layout.maximumWidth: 20
+        }
+
+        Text {
+            id: extractingStatus
+            Layout.alignment: Qt.AlignVCenter
+            verticalAlignment: Text.AlignVCenter
+            font.pixelSize: 14
+            font.weight: Font.Normal
+            font.family: "Poppins"
+            visible: false
+            color: "#FFFFFF"
+        }
+
+        Item {
+            Layout.fillWidth: true
+            Layout.minimumWidth: 20
+            Layout.maximumWidth: 20
         }
 
         PlaybackSpeedControls {

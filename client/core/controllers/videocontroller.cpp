@@ -6,6 +6,18 @@ VideoController::VideoController(QSharedPointer<VideoManager> videoManager,
     , m_videoManager(videoManager)
 {
     connect(m_videoManager.get(), &VideoManager::frameUpdated, this, &VideoController::frameUpdated);
+    connect(m_videoManager.get(), &VideoManager::extractingInProgress, this, &VideoController::extractingInProgress);
+    connect(m_videoManager.get(), &VideoManager::extractedVideoThumbnails, this, &VideoController::extractedVideoThumbnails);
+
+    workerThread = new QThread(this);
+    m_videoManager->moveToThread(workerThread);
+    workerThread->start();
+}
+
+VideoController::~VideoController()
+{
+    workerThread->quit();
+    workerThread->wait();
 }
 
 VideoManager::Loop VideoController::loopState() const
@@ -22,12 +34,16 @@ void VideoController::setLoopState(VideoManager::Loop newLoopState)
     emit loopStateChanged();
 }
 
-void VideoController::setSourceVideo(const QString &path)
+void VideoController::extractVideoThumbnails(const QString &path)
 {
-    m_videoManager->setSourceVideo(path);
+    QMetaObject::invokeMethod(
+        m_videoManager.get(),
+        "extractVideoThumbnails",
+        Q_ARG(QString, path)
+    );
 }
 
-QImage VideoController::readVideoFrameAt(quint64 timestampMs)
+QImage VideoController::getVideoFrame(quint64 timestamp)
 {
-    return m_videoManager->readVideoFrameAt(timestampMs);
+    return m_videoManager->getVideoFrame(timestamp);
 }

@@ -202,7 +202,7 @@ ApplicationWindow {
             }
 
             onSourceChanged: {
-                VideoController.setSourceVideo(mediaPlayer.source)
+                VideoController.extractVideoThumbnails(mediaPlayer.source)
                 SettingsController.saveSetting("Video", "video", mediaPlayer.source.toString())
             }
         }
