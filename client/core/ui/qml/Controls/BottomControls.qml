@@ -18,6 +18,8 @@ Rectangle {
     property alias audioType: audioControl
     property alias playBackSpeedType: playBackSpeed
 
+    property string videoSource: mediaPlayer.source
+
     property bool isMediaSliderPressed: videoSlider.pressed || audioControl.volumeSlider.pressed || playBackSpeed.playbackSlider.pressed
     property alias bottomOpacityRect: bottomOpacity
     property alias bottomMA: bottomControlsMouseArea
@@ -187,17 +189,31 @@ Rectangle {
                     hoverEnabled: true
 
                     onPositionChanged: mouse => {
-                        var relativeX = Math.max(0, Math.min(mouse.x, videoSlider.width))
-                        var hoverValue = Math.floor((relativeX / videoSlider.width) * videoSlider.to)
-                        framePreview.source = "image://framesprovider/" + hoverValue
-                        framePreview.x = mouse.x - 60
-                        framePreview.y = mouse.y
-                        framePreview.visible = true
+                        if (!videoSource.endsWith(".mp3")) {
+                            var relativeX = Math.max(0, Math.min(mouse.x, videoSlider.width))
+                            var hoverValue = Math.floor((relativeX / videoSlider.width) * videoSlider.to)
+                            framePreview.source = "image://framesprovider/" + hoverValue
 
-                        previewTime.text = formatTime(Math.floor(hoverValue)).split("/")[1]
-                        previewTime.x = mouse.x - 60
-                        previewTime.y = mouse.y
-                        previewTime.visible = true
+                            // Map mouse coordinates to framePreview's parent
+                            var parentPos = videoSlider.mapToItem(framePreview.parent, Qt.point(mouse.x, mouse.y))
+
+                            // Center frame horizontally above the mouse
+                            var frameX = parentPos.x - framePreview.width / 2
+                            frameX = Math.max(0, Math.min(frameX, framePreview.parent.width - framePreview.width))
+                            framePreview.x = frameX
+
+                            // Position frame vertically above the mouse
+                            framePreview.y = parentPos.y - framePreview.height
+                            framePreview.visible = true
+
+                            // Position previewTime above frame
+                            previewTime.text = formatTime(Math.floor(hoverValue)).split("/")[1]
+                            var timeX = parentPos.x - previewTime.width / 2
+                            timeX = Math.max(0, Math.min(timeX, framePreview.parent.width - previewTime.width))
+                            previewTime.x = timeX
+                            previewTime.y = framePreview.y - previewTime.height - 2
+                            previewTime.visible = true
+                        }
                     }
 
                     onEntered: {

@@ -36,6 +36,11 @@ void VideoController::setLoopState(VideoManager::Loop newLoopState)
 
 void VideoController::extractVideoThumbnails(const QString &path)
 {
+    // Skip music files
+    if (path.endsWith(".mp3")) {
+        return;
+    }
+
     QMetaObject::invokeMethod(
         m_videoManager.get(),
         "extractVideoThumbnails",
