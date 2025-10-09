@@ -20,6 +20,10 @@ CoreController::CoreController(QQmlApplicationEngine *engine,
     initControllers();
 
     connect(m_filesManager.get(), &FilesManager::videoPassedAsArg, this, &CoreController::videoPassedAsArg);
+
+    m_frameProvider.reset(new FrameProvider(m_videoManager));
+
+    m_engine->addImageProvider("framesprovider", m_frameProvider.get());
 }
 
 void CoreController::loadFonts()

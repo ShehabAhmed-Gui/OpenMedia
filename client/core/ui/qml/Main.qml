@@ -20,8 +20,8 @@ ApplicationWindow {
 
     width: 1500
     height: 800
-    minimumHeight: 460
-    minimumWidth: 700
+    minimumHeight: 500
+    minimumWidth: 850
     visible: true
     title: "OpenMedia"
     color: "#000000"
@@ -186,9 +186,6 @@ ApplicationWindow {
             }
 
             onTracksChanged: {
-                console.log("Available subtitle tracks:", mediaPlayer.subtitleTracks.length)
-                console.log("Available Audio tracks:", mediaPlayer.audioTracks.length)
-
                 MetaDataModel.setSubtitles(mediaPlayer.subtitleTracks)
                 MetaDataModel.setAudioTracks(mediaPlayer.audioTracks)
             }
@@ -204,7 +201,10 @@ ApplicationWindow {
                 mediaPlayer.pause()
             }
 
-            onSourceChanged: SettingsController.saveSetting("Video", "video", mediaPlayer.source.toString())
+            onSourceChanged: {
+                VideoController.extractVideoThumbnails(mediaPlayer.source)
+                SettingsController.saveSetting("Video", "video", mediaPlayer.source.toString())
+            }
         }
 
         Keys.onSpacePressed: {

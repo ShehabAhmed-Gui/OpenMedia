@@ -5,6 +5,8 @@ import QtMultimedia
 
 import "../components"
 
+import com.qt.openmedia 1.0
+
 Rectangle {
     id: root
     width: parent.width
@@ -15,6 +17,8 @@ Rectangle {
 
     property alias audioType: audioControl
     property alias playBackSpeedType: playBackSpeed
+
+    property string videoSource: mediaPlayer.source
 
     property bool isMediaSliderPressed: videoSlider.pressed || audioControl.volumeSlider.pressed || playBackSpeed.playbackSlider.pressed
     property alias bottomOpacityRect: bottomOpacity
@@ -78,6 +82,26 @@ Rectangle {
         onTriggered: userChangingSlider = false
     }
 
+    property Timer extractedThumbnailsTimer: Timer {
+        interval: 2000
+        repeat: false
+        onTriggered: extractingStatus.visible = false
+    }
+
+    Connections {
+        target: VideoController
+
+        function onExtractingInProgress() {
+            extractingStatus.visible = true
+            extractingStatus.text = "Extracting video thumbnails..."
+        }
+
+        function onExtractedVideoThumbnails() {
+            extractingStatus.text = "Extracted video thumbnails";
+            extractedThumbnailsTimer.start()
+        }
+    }
+
     MouseArea {
         id: bottomControlsMouseArea
         anchors.fill: parent
@@ -90,6 +114,28 @@ Rectangle {
         anchors.fill: parent
         opacity: 0.40
         color: "#111111"
+    }
+
+    Image {
+        id: framePreview
+        asynchronous: true
+        cache: true
+        retainWhileLoading: true
+
+        anchors.bottom: previewTime.top
+        anchors.bottomMargin: 3
+    }
+
+    Text {
+        id: previewTime
+        anchors.bottom: videoSliderContainer.top
+        anchors.horizontalCenter: framePreview.horizontalCenter
+        anchors.topMargin: 3
+
+        font.family: "Poppins"
+        font.pixelSize: 14
+        font.weight: Font.Normal
+        color: "#ffffff"
     }
 
     RowLayout {
@@ -116,24 +162,108 @@ Rectangle {
             Layout.minimumWidth: 10
         }
 
-        CustomSliderType {
+        Slider {
             id: videoSlider
+            live: true
 
+            property bool enableHandler: false
             property int videoDuration: mediaPlayer.duration
 
-            sliderWidth: parent.width - 120
-            sliderHeight: 7
+            Layout.minimumWidth: parent.width - 120
+            Layout.minimumHeight: 7
 
-            sliderBackgroundRect.width: parent.width - 120
+            from: 0
+            to: videoDuration
 
-            onMoved: () =>{
+            background: Rectangle {
+                id: backgroundRect
+                x: videoSlider.leftPadding
+                y: videoSlider.topPadding + videoSlider.availableHeight / 2 - height / 2
+
+                width: videoSlider.availableWidth
+                height: 7
+                radius: 2
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+
+                    onPositionChanged: mouse => {
+                        if (!videoSource.endsWith(".mp3")) {
+                            var relativeX = Math.max(0, Math.min(mouse.x, videoSlider.width))
+                            var hoverValue = Math.floor((relativeX / videoSlider.width) * videoSlider.to)
+                            framePreview.source = "image://framesprovider/" + hoverValue
+
+                            // Map mouse coordinates to framePreview's parent
+                            var parentPos = videoSlider.mapToItem(framePreview.parent, Qt.point(mouse.x, mouse.y))
+
+                            // Center frame horizontally above the mouse
+                            var frameX = parentPos.x - framePreview.width / 2
+                            frameX = Math.max(0, Math.min(frameX, framePreview.parent.width - framePreview.width))
+                            framePreview.x = frameX
+
+                            // Position frame vertically above the mouse
+                            framePreview.y = parentPos.y - framePreview.height
+                            framePreview.visible = true
+
+                            // Position previewTime above frame
+                            previewTime.text = formatTime(Math.floor(hoverValue)).split("/")[1]
+                            var timeX = parentPos.x - previewTime.width / 2
+                            timeX = Math.max(0, Math.min(timeX, framePreview.parent.width - previewTime.width))
+                            previewTime.x = timeX
+                            previewTime.y = framePreview.y - previewTime.height - 2
+                            previewTime.visible = true
+                        }
+                    }
+
+                    onEntered: {
+                        cursorShape = Qt.PointingHandCursor
+                        afkTimer.stop()
+                        videoSlider.enableHandler = true
+                    }
+
+                    onExited: {
+                        cursorShape = Qt.ArrowCursor
+                        afkTimer.start()
+                        videoSlider.enableHandler = false
+                        framePreview.visible = false
+                        previewTime.visible = false
+                    }
+                }
+
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.40448; color: "#333333" }
+                }
+
+                Rectangle {
+                    width: videoSlider.visualPosition * parent.width
+                    height: parent.height
+
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.40448; color: "#6E8BB3"  }
+                        GradientStop { position: 1; color: "#4C5D8B" }
+                    }
+                    radius: 2
+                }
+            }
+
+            handle: Rectangle {
+                visible: videoSlider.enableHandler? true : false
+                x: videoSlider.leftPadding + videoSlider.visualPosition * (videoSlider.availableWidth - width)
+                y: backgroundRect.y + backgroundRect.height / 2 - height / 2
+                implicitWidth: 12
+                implicitHeight: 12
+                radius: 15
+                color: "#A6A9C8"
+            }
+
+            onMoved: {
                 if (userChangingSlider) {
                     mediaPlayer.position = videoSlider.value
                 }
             }
-
-            from: 0
-            to: videoDuration
 
             onValueChanged: {
                 userChangingSlider = true
@@ -159,16 +289,161 @@ Rectangle {
     }
 
     RowLayout {
+        id: controlButtons
+        spacing: Screen.primaryOrientation === Qt.LandscapeOrientation? 17 : 10
+        anchors.verticalCenter: playerControls.verticalCenter
+        anchors.centerIn: playerControls
+        Layout.fillWidth: true
+
+        CustomButton {
+            id: skipBackward
+            buttonRadius: 0
+
+            iconSource: "qrc:/ui/icons/svg/previous.svg"
+            iconWidth: 16
+            iconHeight: 16
+
+            ToolTipType {
+                toolTipText: "Skip To Previous Video"
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
+
+                onClicked: {
+                    playlist.listView.playPrevious()
+                }
+            }
+        }
+
+        CustomButton {
+            id: seekBackward
+            iconSource: "qrc:/ui/icons/backward_10s.png"
+            iconWidth: 17
+            iconHeight: 17
+
+            ToolTipType {
+                toolTipText: "Seek 10s backward"
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: root.seekBackward()
+                cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
+            }
+        }
+
+        CustomButton {
+            id: startStopButton
+            iconSource: mediaPlayer.playbackState === MediaPlayer.PlayingState
+                        ? "qrc:/ui/icons/svg/stop.svg"
+                        : "qrc:/ui/icons/svg/play.svg"
+            iconWidth: 30
+            iconHeight: 30
+
+            ToolTipType {
+                toolTipText: mediaPlayer.playbackState === MediaPlayer.PlayingState? "Stop" : "Play"
+            }
+
+            onHoverBackgroundColor: "transparent"
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
+
+                onClicked: mediaPlayer.playbackState === MediaPlayer.PlayingState
+                           ? mediaPlayer.pause()
+                           : mediaPlayer.play()
+            }
+        }
+
+        CustomButton {
+            id: seekForward
+            iconSource: "qrc:/ui/icons/forward_10s.png"
+            iconWidth: 17
+            iconHeight: 17
+
+            ToolTipType {
+                toolTipText: "Seek 10s forward"
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: root.seekForward()
+                cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
+            }
+        }
+
+        CustomButton {
+            id: skipForward
+            buttonRadius: 0
+            iconSource: "qrc:/ui/icons/svg/next.svg"
+            iconWidth: 16
+            iconHeight: 16
+
+            ToolTipType {
+                toolTipText: "Skip To Next Video"
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
+                onClicked: {
+                    playlist.listView.playNext()
+                }
+            }
+        }
+
+        CustomButton {
+            id: loopBtn
+            iconSource: VideoController.loopState? "qrc:/ui/icons/svg/loop_active.svg"
+                                                 : "qrc:/ui/icons/svg/loop_disabled.svg"
+            iconHeight: 23
+            iconWidth: 23
+
+            ToolTipType {
+                toolTipText: VideoController.loopState? "Disable repeat" : "Enable repeat"
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
+
+                onClicked: VideoController.setLoopState(!VideoController.loopState)
+            }
+        }
+    }
+
+    RowLayout {
         id: playerControls
         anchors.fill: root
         width: parent.width
+        anchors.top: videoSliderContainer.bottom
+        anchors.topMargin: 15
         anchors.centerIn: parent
 
         Item {
-            visible: Screen.primaryOrientation === Qt.LandscapeOrientation
             Layout.fillWidth: true
-            Layout.minimumWidth: 40
-            Layout.maximumWidth: 70
+            Layout.minimumWidth: 20
+            Layout.maximumWidth: 20
+        }
+
+        Text {
+            id: extractingStatus
+            Layout.alignment: Qt.AlignVCenter
+            verticalAlignment: Text.AlignVCenter
+            font.pixelSize: 14
+            font.weight: Font.Normal
+            font.family: "Poppins"
+            visible: false
+            color: "#FFFFFF"
+        }
+
+        Item {
+            Layout.fillWidth: true
+            Layout.minimumWidth: 20
+            Layout.maximumWidth: 20
         }
 
         PlaybackSpeedControls {
@@ -183,133 +458,6 @@ Rectangle {
 
         Item {
             Layout.fillWidth: true
-        }
-
-        RowLayout {
-            id: controlButtons
-            spacing: Screen.primaryOrientation === Qt.LandscapeOrientation? 17 : 10
-            anchors.horizontalCenter: parent.horizontalCenter
-            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-            Layout.fillWidth: true
-
-            CustomButton {
-                id: skipBackward
-                buttonRadius: 0
-
-                iconSource: "qrc:/ui/icons/svg/previous.svg"
-                iconWidth: 16
-                iconHeight: 16
-
-                ToolTipType {
-                    toolTipText: "Skip To Previous Video"
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
-
-                    onClicked: {
-                        playlist.listView.playPrevious()
-                    }
-                }
-            }
-
-            CustomButton {
-                id: seekBackward
-                iconSource: "qrc:/ui/icons/backward_10s.png"
-                iconWidth: 17
-                iconHeight: 17
-
-                ToolTipType {
-                    toolTipText: "Seek 10s backward"
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: root.seekBackward()
-                    cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
-                }
-            }
-
-            CustomButton {
-                id: startStopButton
-                iconSource: mediaPlayer.playbackState === MediaPlayer.PlayingState
-                            ? "qrc:/ui/icons/svg/stop.svg"
-                            : "qrc:/ui/icons/svg/play.svg"
-                iconWidth: 30
-                iconHeight: 30
-
-                ToolTipType {
-                    toolTipText: mediaPlayer.playbackState === MediaPlayer.PlayingState? "Stop" : "Play"
-                }
-
-                onHoverBackgroundColor: "transparent"
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
-
-                    onClicked: mediaPlayer.playbackState === MediaPlayer.PlayingState
-                               ? mediaPlayer.pause()
-                               : mediaPlayer.play()
-                }
-            }
-
-            CustomButton {
-                id: seekForward
-                iconSource: "qrc:/ui/icons/forward_10s.png"
-                iconWidth: 17
-                iconHeight: 17
-
-                ToolTipType {
-                    toolTipText: "Seek 10s forward"
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: root.seekForward()
-                    cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
-                }
-            }
-
-            CustomButton {
-                id: skipForward
-                buttonRadius: 0
-                iconSource: "qrc:/ui/icons/svg/next.svg"
-                iconWidth: 16
-                iconHeight: 16
-
-                ToolTipType {
-                    toolTipText: "Skip To Next Video"
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: {
-                        playlist.listView.playNext()
-                    }
-                }
-            }
-
-            CustomButton {
-                id: loopBtn
-                iconSource: VideoController.loopState? "qrc:/ui/icons/svg/loop_active.svg"
-                                                     : "qrc:/ui/icons/svg/loop_disabled.svg"
-                iconHeight: 23
-                iconWidth: 23
-
-                ToolTipType {
-                    toolTipText: VideoController.loopState? "Disable repeat" : "Enable repeat"
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
-
-                    onClicked: VideoController.setLoopState(!VideoController.loopState)
-                }
-            }
         }
 
         AudioControls {

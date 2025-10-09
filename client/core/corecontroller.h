@@ -8,6 +8,7 @@
 #include "settings.h"
 #include "filesmanager.h"
 #include "videomanager.h"
+#include "frameprovider.h"
 
 // Models
 #include "models/playlistmodel.h"
@@ -49,6 +50,7 @@ private:
     QSharedPointer<Settings> m_settings;
     QSharedPointer<SettingsController> m_settingsController;
 
+    QSharedPointer<FrameProvider> m_frameProvider;
 
     QSharedPointer<VideoManager> m_videoManager;
     QSharedPointer<VideoController> m_videoController;

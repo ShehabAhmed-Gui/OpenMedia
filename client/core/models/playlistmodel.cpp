@@ -98,7 +98,7 @@ void PlaylistModel::deleteItem(const qsizetype &index)
         beginRemoveRows(QModelIndex(), index, index);
         m_data.removeAt(index);
         endRemoveRows();
-    } else { qDebug() << "Item doesn't exist"; }
+    } else { qWarning() << "Item doesn't exist"; }
 }
 
 void PlaylistModel::clearPlaylist()
@@ -110,6 +110,8 @@ void PlaylistModel::clearPlaylist()
     beginRemoveRows (QModelIndex(), 0, m_data.size() - 1);
     m_data.clear();
     endRemoveRows();
+
+    m_currentIndex = -1;
 }
 
 QString PlaylistModel::getPrevious()
@@ -130,6 +132,7 @@ QString PlaylistModel::getNext()
     }
 
     m_currentIndex = m_currentIndex == m_data.size() - 1? 0 : m_currentIndex + 1;
+
     return m_data.at(m_currentIndex);
 }
 

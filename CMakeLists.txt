@@ -6,11 +6,17 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(FFMPEG_DIR ${CMAKE_CURRENT_LIST_DIR}/3rdparty/ffmpeg)
+
+message("FFMPEG_DIR = ${FFMPEG_DIR}")
+
 find_package(Qt6 6.5 REQUIRED COMPONENTS
     Core Gui Quick QuickControls2 Widgets
     Multimedia MultimediaWidgets)
 
 find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
+find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Core)
 
 set(SOURCES
     client/core/main.cpp
@@ -29,8 +35,22 @@ qt_standard_project_setup()
 
 qt6_add_resources(SOURCES "client/core/resources.qrc")
 
+# Point pkg-config to your FFmpeg .pc files
+set(ENV{PKG_CONFIG_PATH} ${CMAKE_CURRENT_LIST_DIR}/3rdparty/ffmpeg/lib/pkgconfig)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
+    libavdevice
+    libavfilter
+    libavformat
+    libavcodec
+    libswresample
+    libswscale
+    libavutil
+)
+
 qt_add_executable(OpenMedia
-    # WIN32
+    WIN32
     ${SOURCES}
     ${HEADERS}
     client/core/controllers/settingscontroller.h client/core/controllers/settingscontroller.cpp
@@ -40,6 +60,9 @@ qt_add_executable(OpenMedia
     client/core/models/metadatafilterproxymodel.h client/core/models/metadatafilterproxymodel.cpp
     client/core/videomanager.h client/core/videomanager.cpp
     client/core/controllers/videocontroller.h client/core/controllers/videocontroller.cpp
+    client/core/frameprovider.h client/core/frameprovider.cpp
+
+
 )
 
 # qt_add_translations(OpenMedia TS_FILES client/core//translation/OpenMedia_en_US.ts)
@@ -50,6 +73,10 @@ set_target_properties(OpenMedia PROPERTIES
     MACOSX_BUNDLE TRUE
 )
 
+include_directories(${FFMPEG_DIR}/include)
+link_directories(${FFMPEG_DIR}/lib)
+link_directories(${FFMPEG_DIR}/bin)
+
 target_link_libraries(OpenMedia PRIVATE
     Qt6::Core
     Qt6::Gui
@@ -58,7 +85,10 @@ target_link_libraries(OpenMedia PRIVATE
     Qt6::Widgets
     Qt6::Multimedia
     Qt6::MultimediaWidgets
+    PkgConfig::LIBAV
 )
+target_link_libraries(OpenMedia PRIVATE Qt6::Core)
+target_link_libraries(OpenMedia PRIVATE Qt6::Core)
 
 include(GNUInstallDirs)
 install(TARGETS OpenMedia
