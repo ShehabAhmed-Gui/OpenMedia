@@ -33,7 +33,8 @@ int main(int argc, char *argv[])
     QSharedPointer<FilesManager> filesManager;
     filesManager.reset(new FilesManager(settings, &app));
 
-    // Don't give videoManager a parent so it can be moved to workerThread
+    // Don't give videoManager a parent
+    // so it can be moved to a worker thread
     QSharedPointer<VideoManager> videoManager;
     videoManager.reset(new VideoManager(settings));
 
@@ -50,8 +51,8 @@ int main(int argc, char *argv[])
 
     // Parse args
     if (QCoreApplication::arguments().size() > 1) {
-        QString videoPath = QCoreApplication::arguments().last();
-        filesManager->playFile(const_cast<QString &>(videoPath));
+        QString videoPath = QCoreApplication::arguments().constLast();
+        videoManager->openMediaFile(const_cast<QString &>(videoPath));
     }
 
     if (engine->rootObjects().isEmpty())

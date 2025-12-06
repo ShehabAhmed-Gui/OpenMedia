@@ -2,7 +2,7 @@
 
 FilesManager::FilesManager(const QSharedPointer<Settings> settings,
                            QObject *parent)
-    : supportedVids("*.mp3 *.mp4 *.wav *.mkv *.webm")
+    : m_supportedFormats("*.mp3 *.mp4 *.wav *.mkv *.webm")
     , m_settings(settings)
 {
     m_defaultPath = m_settings->getSetting("VideosPath", "lastSelectedPath").toString().remove("file://");
@@ -14,37 +14,29 @@ FilesManager::~FilesManager()
     delete dialog;
 }
 
-void FilesManager::playFile(QString path)
-{
-#ifdef Q_OS_LINUX
-    path = "file://" + path;
-#endif
-
-    emit videoPassedAsArg(path);
-}
-
 QVector<QString> FilesManager::selectFiles()
 {
     dialog->setOptions(QFileDialog::ReadOnly);
-    selectedFiles = dialog->getOpenFileNames(nullptr, "Select A Bunch Of Videos", m_defaultPath, supportedVids);
+    m_loadedFiles = dialog->getOpenFileNames(nullptr, "Select A Bunch Of Videos", m_defaultPath, m_supportedFormats);
 
-    if (!selectedFiles.isEmpty()) {
-        const QString &videosPath = selectedFiles.last();
+    if (!m_loadedFiles.isEmpty()) {
+        const QString &videosPath = m_loadedFiles.last();
         m_settings->saveSetting("VideosPath", "lastSelectedPath", videosPath);
         m_defaultPath = videosPath;
     }
 
-    #ifdef Q_OS_LINUX
+#ifdef Q_OS_LINUX
         QVector<QString> linuxFiles;
         for (QString &file : selectedFiles) {
             linuxFiles.append("file://" + file);
         }
         return linuxFiles;
-    #endif
+#endif
 
-    return selectedFiles;
+    return m_loadedFiles;
 }
 
+#ifdef Q_OS_LINUX
 void FilesManager::setupDesktopFile()
 {
     const QString appFile = QCoreApplication::applicationDirPath() + "/OpenMedia.sh";
@@ -52,17 +44,15 @@ void FilesManager::setupDesktopFile()
     const QString targetDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/applications";
     const QString targetFile = targetDir + "/OpenMedia.desktop";
 
-    // Escape spaces in paths
-
     QDir().mkpath(targetDir);
 
-    // Copy the .desktop file
     QFile desktopFile(targetFile);
 
-    if (desktopFile.open(QIODevice::WriteOnly)) {
+    if (desktopFile.open(QIODevice::WriteOnly)) { 
+        QString fileContent;
+        QTextStream ts(&fileContent);
 
-        // Write desktop file
-        const QString fileContent = QString(
+        ts <<
             "[Desktop Entry]\n"
             "Name[en_US]=OpenMedia\n"
             "Comment=Play videos with OpenMedia\n"
@@ -71,11 +61,11 @@ void FilesManager::setupDesktopFile()
             "Terminal=false\n"
             "Type=Application\n"
             "MimeType=video/mp4;audio/wav\n"
-            "Categories=AudioVideo;Video;"
-        ).arg(appFile, appIcon);
+            "Categories=AudioVideo;Video;\n";
+
+        fileContent = fileContent.arg(appFile, appIcon);
 
         desktopFile.write(fileContent.toUtf8());
-        // Set permissions
         desktopFile.setPermissions(targetFile, QFile::WriteUser | QFile::ReadUser);
         desktopFile.close();
 
@@ -85,3 +75,4 @@ void FilesManager::setupDesktopFile()
         process.waitForFinished();
     }
 }
+#endif

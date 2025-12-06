@@ -96,10 +96,9 @@ ApplicationWindow {
     }
 
     Connections {
-        id: playVideoFromArg
         target: CoreController
 
-        function onVideoPassedAsArg(arg) {
+        function onPlayMediaFile(arg) {
             hidePlaylist.start()
             mediaPlayer.stop();
             Qt.callLater(() => {
