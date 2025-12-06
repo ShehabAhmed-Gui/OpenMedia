@@ -1,12 +1,13 @@
 # OpenMedia
 ## _Media Player Application_
-OpenMedia is a media player application. plays local videos from your computer.
+OpenMedia is a media player application. plays local media files from your computer.
 
 ## Features
 - OpenMedia saves settings such as volume level, playlist items, etc...
-- Very easy to use - Add a bunch of videos from your computer or set it as your preferred application for videos, and that's it OpenMedia will play it.
+- Very easy to use - Add a bunch of media files from your computer or set it as your preferred application for videos and music, and that's it OpenMedia will play it.
 - Loud volume, increasing the volume to 100 will have a louder sound compared to online video players.
 - Frame-preview feature when hovering over the video slider.
+- Cross-platform, OpenMedia is available for Linux and Windows as for now.
 
 ## Links
 
@@ -25,8 +26,8 @@ It is a personal project, But feel free to contribute.
 ## Building source
 ## Required tools for building the appliaction on windows
 
-1. First you need **Qt 6.5.3** (Tested version, You can use another version and see if it works). You can download Qt for windows, linux from here:
-- [Qt online installer](https://www.qt.io/download-open-source)
+1. First you need **Qt 6.9.2** (Tested version, You can use other Qt6 versions and see if it works). 
+You can download Qt for Windows and Linux from here: [Qt online installer](https://www.qt.io/download-open-source)
 
 2. Install CMake if it's not already installed. Recommended CMake version is 3.25, Install CMake from [here](https://cmake.org/download/)
 
