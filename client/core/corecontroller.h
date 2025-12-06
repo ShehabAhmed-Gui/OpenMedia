@@ -32,7 +32,7 @@ public:
                             QObject *parent = nullptr);
 
 signals:
-    void videoPassedAsArg(const QString &path);
+    void playMediaFile(const QString &path);
 
 private:
     void loadFonts();

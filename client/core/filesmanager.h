@@ -19,25 +19,20 @@ public:
                           QObject *parent = nullptr);
     ~FilesManager();
 
-    void playFile(QString path);
-
     QVector<QString> selectFiles();
 
+#ifdef Q_OS_LINUX
     void setupDesktopFile();
-
-signals:
-    void videoPassedAsArg(QString path);
+#endif
 
 private:
     QFileDialog *dialog;
-
     QSharedPointer<Settings> m_settings;
 
     QString m_defaultPath;
-    QString supportedVids;
+    QString m_supportedFormats;
     QString m_selected;
-
-    QStringList selectedFiles;
+    QStringList m_loadedFiles;
 };
 
 #endif // APPMANAGER_H

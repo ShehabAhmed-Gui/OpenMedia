@@ -22,6 +22,8 @@ public:
         Enabled = 1
     };
 
+    void openMediaFile(QString path);
+
     Loop loopState() const;
     void setLoopState(Loop newLoopState);
     void setSourceVideo(const QString &path);
@@ -35,6 +37,7 @@ signals:
     void frameUpdated(int timestampMs);
     void extractingInProgress();
     void extractedVideoThumbnails();
+    void playMediaFile(QString path);
 
 private:
     Loop m_loopState = Disabled;

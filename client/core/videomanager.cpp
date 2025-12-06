@@ -13,6 +13,15 @@ VideoManager::VideoManager(QSharedPointer<Settings> settings,
     connect(m_thumbnailsExtractor, &ThumbnailsExtractor::extractedVideoThumbnails, this, &VideoManager::extractedVideoThumbnails);
 }
 
+void VideoManager::openMediaFile(QString path)
+{
+#ifdef Q_OS_LINUX
+    path = "file://" + path;
+#endif
+
+    emit playMediaFile(path);
+}
+
 VideoManager::Loop VideoManager::loopState() const
 {
     return m_loopState;

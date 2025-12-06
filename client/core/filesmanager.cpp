@@ -2,7 +2,7 @@
 
 FilesManager::FilesManager(const QSharedPointer<Settings> settings,
                            QObject *parent)
-    : supportedVids("*.mp3 *.mp4 *.wav *.mkv *.webm")
+    : m_supportedFormats("*.mp3 *.mp4 *.wav *.mkv *.webm")
     , m_settings(settings)
 {
     m_defaultPath = m_settings->getSetting("VideosPath", "lastSelectedPath").toString().remove("file://");
@@ -14,37 +14,29 @@ FilesManager::~FilesManager()
     delete dialog;
 }
 
-void FilesManager::playFile(QString path)
-{
-#ifdef Q_OS_LINUX
-    path = "file://" + path;
-#endif
-
-    emit videoPassedAsArg(path);
-}
-
 QVector<QString> FilesManager::selectFiles()
 {
     dialog->setOptions(QFileDialog::ReadOnly);
-    selectedFiles = dialog->getOpenFileNames(nullptr, "Select A Bunch Of Videos", m_defaultPath, supportedVids);
+    m_loadedFiles = dialog->getOpenFileNames(nullptr, "Select A Bunch Of Videos", m_defaultPath, m_supportedFormats);
 
-    if (!selectedFiles.isEmpty()) {
-        const QString &videosPath = selectedFiles.last();
+    if (!m_loadedFiles.isEmpty()) {
+        const QString &videosPath = m_loadedFiles.last();
         m_settings->saveSetting("VideosPath", "lastSelectedPath", videosPath);
         m_defaultPath = videosPath;
     }
 
-    #ifdef Q_OS_LINUX
+#ifdef Q_OS_LINUX
         QVector<QString> linuxFiles;
         for (QString &file : selectedFiles) {
             linuxFiles.append("file://" + file);
         }
         return linuxFiles;
-    #endif
+#endif
 
-    return selectedFiles;
+    return m_loadedFiles;
 }
 
+#ifdef Q_OS_LINUX
 void FilesManager::setupDesktopFile()
 {
     const QString appFile = QCoreApplication::applicationDirPath() + "/OpenMedia.sh";
@@ -83,3 +75,4 @@ void FilesManager::setupDesktopFile()
         process.waitForFinished();
     }
 }
+#endif
