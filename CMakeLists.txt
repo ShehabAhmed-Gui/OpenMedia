@@ -61,6 +61,7 @@ qt_add_executable(OpenMedia
     client/core/videomanager.h client/core/videomanager.cpp
     client/core/controllers/videocontroller.h client/core/controllers/videocontroller.cpp
     client/core/frameprovider.h client/core/frameprovider.cpp
+    client/core/thumbnailsextractor.h client/core/thumbnailsextractor.cpp
 
 
 )
