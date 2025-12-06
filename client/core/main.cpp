@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 
     QApplication app(argc, argv);
 
-    QQmlApplicationEngine *engine = new QQmlApplicationEngine(&app);
+    QQmlApplicationEngine *engine = new QQmlApplicationEngine();
 
     const QUrl url(QStringLiteral("qrc:/ui/qml/Main.qml"));
 
@@ -33,8 +33,9 @@ int main(int argc, char *argv[])
     QSharedPointer<FilesManager> filesManager;
     filesManager.reset(new FilesManager(settings, &app));
 
+    // Don't give videoManager a parent so it can be moved to workerThread
     QSharedPointer<VideoManager> videoManager;
-    videoManager.reset(new VideoManager(settings, &app));
+    videoManager.reset(new VideoManager(settings));
 
 #ifdef Q_OS_LINUX
     filesManager->setupDesktopFile();

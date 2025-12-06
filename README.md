@@ -6,6 +6,7 @@ OpenMedia is a media player application. plays local videos from your computer.
 - OpenMedia saves settings such as volume level, playlist items, etc...
 - Very easy to use - Add a bunch of videos from your computer or set it as your preferred application for videos, and that's it OpenMedia will play it.
 - Loud volume, increasing the volume to 100 will have a louder sound compared to online video players.
+- Frame-preview feature when hovering over the video slider.
 
 ## Links
 

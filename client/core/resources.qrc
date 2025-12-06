@@ -40,5 +40,7 @@
         <file>ui/icons/svg/loop_disabled.svg</file>
         <file>ui/qml/delegates/PlaylistDelegate.qml</file>
         <file>ui/icons/svg/music_media.svg</file>
+        <file>ui/qml/pages/SettingsShortcutsSubPage.qml</file>
+        <file>ui/qml/pages/Settings.qml</file>
     </qresource>
 </RCC>
