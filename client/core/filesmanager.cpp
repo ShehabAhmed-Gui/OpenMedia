@@ -52,17 +52,15 @@ void FilesManager::setupDesktopFile()
     const QString targetDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + "/applications";
     const QString targetFile = targetDir + "/OpenMedia.desktop";
 
-    // Escape spaces in paths
-
     QDir().mkpath(targetDir);
 
-    // Copy the .desktop file
     QFile desktopFile(targetFile);
 
-    if (desktopFile.open(QIODevice::WriteOnly)) {
+    if (desktopFile.open(QIODevice::WriteOnly)) { 
+        QString fileContent;
+        QTextStream ts(&fileContent);
 
-        // Write desktop file
-        const QString fileContent = QString(
+        ts <<
             "[Desktop Entry]\n"
             "Name[en_US]=OpenMedia\n"
             "Comment=Play videos with OpenMedia\n"
@@ -71,11 +69,11 @@ void FilesManager::setupDesktopFile()
             "Terminal=false\n"
             "Type=Application\n"
             "MimeType=video/mp4;audio/wav\n"
-            "Categories=AudioVideo;Video;"
-        ).arg(appFile, appIcon);
+            "Categories=AudioVideo;Video;\n";
+
+        fileContent = fileContent.arg(appFile, appIcon);
 
         desktopFile.write(fileContent.toUtf8());
-        // Set permissions
         desktopFile.setPermissions(targetFile, QFile::WriteUser | QFile::ReadUser);
         desktopFile.close();
 
