@@ -16,15 +16,41 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS
 
 set(SOURCES
     client/core/main.cpp
+    client/core/corecontroller.cpp
     client/core/settings.cpp
+    client/core/settingsloader.cpp
     client/core/filesmanager.cpp
+    client/core/videomanager.cpp
+    client/core/frameprovider.cpp
+    client/core/thumbnailsextractor.cpp
+    client/core/foldermonitor.cpp
+
+    client/core/models/metadatamodel.cpp
     client/core/models/playlistmodel.cpp
+    client/core/models/metadatafilterproxymodel.cpp
+
+    client/core/controllers/filescontroller.cpp
+    client/core/controllers/settingscontroller.cpp
+    client/core/controllers/videocontroller.cpp
 )
 
 set(HEADERS
+    client/core/corecontroller.h
     client/core/settings.h
+    client/core/settingsloader.h
     client/core/filesmanager.h
+    client/core/videomanager.h
+    client/core/frameprovider.h
+    client/core/thumbnailsextractor.h
+    client/core/foldermonitor.h
+
+    client/core/models/metadatamodel.h
     client/core/models/playlistmodel.h
+    client/core/models/metadatafilterproxymodel.h
+
+    client/core/controllers/filescontroller.h
+    client/core/controllers/settingscontroller.h
+    client/core/controllers/videocontroller.h
 )
 
 qt_standard_project_setup()
@@ -48,20 +74,8 @@ pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
 qt_add_executable(OpenMedia
     WIN32
     ${SOURCES}
-    ${HEADERS}
-    client/core/controllers/settingscontroller.h client/core/controllers/settingscontroller.cpp
-    client/core/corecontroller.h client/core/corecontroller.cpp
-    client/core/controllers/filescontroller.h client/core/controllers/filescontroller.cpp
-    client/core/models/metadatamodel.h client/core/models/metadatamodel.cpp
-    client/core/models/metadatafilterproxymodel.h client/core/models/metadatafilterproxymodel.cpp
-    client/core/videomanager.h client/core/videomanager.cpp
-    client/core/controllers/videocontroller.h client/core/controllers/videocontroller.cpp
-    client/core/frameprovider.h client/core/frameprovider.cpp
-    client/core/thumbnailsextractor.h client/core/thumbnailsextractor.cpp
-    client/core/foldermonitor.h client/core/foldermonitor.cpp
+    ${HEADERS} 
 )
-
-# qt_add_translations(OpenMedia TS_FILES client/core//translation/OpenMedia_en_US.ts)
 
 set_target_properties(OpenMedia PROPERTIES
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
