@@ -19,10 +19,7 @@ CoreController::CoreController(QQmlApplicationEngine *engine,
     initModels();
     initControllers();
 
-    connect(m_videoManager.get(), &VideoManager::playMediaFile, this, &CoreController::playMediaFile);
-
     m_frameProvider.reset(new FrameProvider(m_videoManager));
-
     m_engine->addImageProvider("framesprovider", m_frameProvider.get());
 }
 

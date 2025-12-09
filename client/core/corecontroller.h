@@ -31,9 +31,6 @@ public:
                             const QSharedPointer<FilesManager> filesManager, const QSharedPointer<VideoManager> videoManager,
                             QObject *parent = nullptr);
 
-signals:
-    void playMediaFile(const QString &path);
-
 private:
     void loadFonts();
 

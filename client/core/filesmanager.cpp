@@ -7,6 +7,10 @@ FilesManager::FilesManager(const QSharedPointer<Settings> settings,
 {
     m_defaultPath = m_settings->getSetting("VideosPath", "lastSelectedPath").toString().remove("file://");
     dialog = new QFileDialog();
+
+    folderMonitor = new FolderMonitor(this);
+    connect(folderMonitor, &FolderMonitor::fileChanged, this, &FilesManager::fileChanged);
+    connect(folderMonitor, &FolderMonitor::fileChanged, this, &FilesManager::fileChanged);
 }
 
 FilesManager::~FilesManager()
@@ -19,18 +23,30 @@ QVector<QString> FilesManager::selectFiles()
     dialog->setOptions(QFileDialog::ReadOnly);
     m_loadedFiles = dialog->getOpenFileNames(nullptr, "Select A Bunch Of Videos", m_defaultPath, m_supportedFormats);
 
-    if (!m_loadedFiles.isEmpty()) {
-        const QString &videosPath = m_loadedFiles.last();
-        m_settings->saveSetting("VideosPath", "lastSelectedPath", videosPath);
-        m_defaultPath = videosPath;
+    if (m_loadedFiles.isEmpty()) {
+        qDebug() << "User didn't select any files";
+        return m_loadedFiles;
+    }
+
+    const QString &videoPath = m_loadedFiles.last();
+    m_settings->saveSetting("VideosPath", "lastSelectedPath", videoPath);
+    m_defaultPath = videoPath;
+
+#ifdef Q_OS_LINUX
+    QVector<QString> linuxFiles;
+#endif
+
+    // Add mandatory prefix for Linux.
+    // Start monitoring loaded files.
+    for (QString &file : m_loadedFiles) {
+#ifdef Q_OS_LINUX
+        inuxFiles.append("file://" + file);
+#endif
+        folderMonitor->addPath(file);
     }
 
 #ifdef Q_OS_LINUX
-        QVector<QString> linuxFiles;
-        for (QString &file : selectedFiles) {
-            linuxFiles.append("file://" + file);
-        }
-        return linuxFiles;
+    return linuxFiles;
 #endif
 
     return m_loadedFiles;

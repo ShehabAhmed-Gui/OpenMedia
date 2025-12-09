@@ -6,7 +6,6 @@
 
 #include "../filesmanager.h"
 
-
 class PlaylistModel : public QAbstractListModel
 {
     Q_OBJECT
@@ -40,6 +39,9 @@ public:
 
     qsizetype currentIndex() const;
     void setCurrentIndex(qsizetype newCurrentIndex);
+
+public slots:
+    void onMediaFileChanged(const QString &path);
 
 signals:
     void currentIndexChanged();

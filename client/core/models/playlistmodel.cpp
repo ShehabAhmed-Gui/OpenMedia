@@ -8,12 +8,16 @@ PlaylistModel::PlaylistModel(const QSharedPointer<Settings> settings,
     , m_settings(settings)
     , m_filesManager(filesManager)
 {
+
+    // TODO: implement SettingsLoader
     beginInsertRows(QModelIndex(), m_data.size(), m_data.size());
-        for (QString &item : m_settings->getKeys("Playlist")) {
-            const QString &playlistItem = m_settings->getSetting("Playlist", item).toString();
-            m_data.append(playlistItem);
-        }
+    for (QString &item : m_settings->getKeys("Playlist")) {
+        const QString &playlistItem = m_settings->getSetting("Playlist", item).toString();
+        m_data.append(playlistItem);
+    }
     endInsertRows();
+
+    connect(m_filesManager.get(), &FilesManager::fileChanged, this, &PlaylistModel::onMediaFileChanged);
 }
 
 PlaylistModel::~PlaylistModel()
@@ -82,7 +86,6 @@ bool PlaylistModel::setData(const QModelIndex &index, const QVariant &value, int
 void PlaylistModel::loadVideos()
 {
     QVector<QString> selected = m_filesManager->selectFiles();
-
     for (const auto& item : std::as_const(selected)) {
         if (!m_data.contains(item)) {
             beginInsertRows(QModelIndex(), m_data.size(), m_data.size());
@@ -147,4 +150,15 @@ void PlaylistModel::setCurrentIndex(qsizetype newCurrentIndex)
         return;
     m_currentIndex = newCurrentIndex;
     emit currentIndexChanged();
+}
+
+void PlaylistModel::onMediaFileChanged(const QString &path)
+{
+    for (int i = 0; i < m_data.size(); ++i) {
+        if (m_data[i] == path) {
+            beginRemoveRows(QModelIndex(), i, i);
+            m_data.remove(i);
+            endRemoveRows();
+        }
+    }
 }

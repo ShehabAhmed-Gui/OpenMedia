@@ -10,6 +10,7 @@
 #include <QProcess>
 
 #include "settings.h"
+#include "foldermonitor.h"
 
 class FilesManager : public QObject
 {
@@ -25,8 +26,13 @@ public:
     void setupDesktopFile();
 #endif
 
+signals:
+    void directoryChanged(const QString &path);
+    void fileChanged(const QString &path);
+
 private:
     QFileDialog *dialog;
+    FolderMonitor *folderMonitor;
     QSharedPointer<Settings> m_settings;
 
     QString m_defaultPath;

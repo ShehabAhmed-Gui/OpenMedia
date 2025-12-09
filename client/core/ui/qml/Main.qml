@@ -96,13 +96,13 @@ ApplicationWindow {
     }
 
     Connections {
-        target: CoreController
+        target: VideoController
 
-        function onPlayMediaFile(arg) {
+        function onPlayMediaFile(path) {
             hidePlaylist.start()
             mediaPlayer.stop();
             Qt.callLater(() => {
-                mediaPlayer.source = Qt.url(arg);
+                mediaPlayer.source = Qt.url(path);
                 mediaPlayer.play();
                 mediaPlayer.position = 0;
             });
