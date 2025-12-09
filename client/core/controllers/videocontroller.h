@@ -21,7 +21,6 @@ public:
     Q_INVOKABLE VideoManager::Loop loopState() const;
     Q_INVOKABLE void setLoopState(VideoManager::Loop newLoopState);
 
-
     Q_INVOKABLE void extractVideoThumbnails(const QString &path);
     Q_INVOKABLE QImage getVideoFrame(quint64 timestamp);
 
@@ -30,6 +29,7 @@ signals:
     void frameUpdated(int timestamp);
     void extractingInProgress();
     void extractedVideoThumbnails();
+    void playMediaFile(QString path);
 
 private:
     QSharedPointer<VideoManager> m_videoManager;
