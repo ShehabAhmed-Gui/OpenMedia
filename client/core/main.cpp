@@ -5,7 +5,7 @@
 
 #include "settings.h"
 #include "filesmanager.h"
-
+#include "settingsloader.h"
 #include "corecontroller.h"
 
 #include <QLoggingCategory>
@@ -30,8 +30,14 @@ int main(int argc, char *argv[])
     QSharedPointer<Settings> settings;
     settings.reset(new Settings(&app));
 
+    QSharedPointer<SettingsLoader> settingsLoader;
+    settingsLoader.reset(new SettingsLoader(settings, &app));
+
+    QSharedPointer<SettingsController> settingsController;
+    settingsController.reset(new SettingsController(settings, settingsLoader, &app));
+
     QSharedPointer<FilesManager> filesManager;
-    filesManager.reset(new FilesManager(settings, &app));
+    filesManager.reset(new FilesManager(settingsController, &app));
 
     // Don't give videoManager a parent
     // so it can be moved to a worker thread
@@ -43,9 +49,7 @@ int main(int argc, char *argv[])
 #endif
 
     QScopedPointer<CoreController> coreController;
-    coreController.reset(new CoreController(engine, settings, filesManager, videoManager));
-
-    qmlRegisterSingletonInstance("com.qt.openmedia", 1, 0, "CoreController", coreController.get());
+    coreController.reset(new CoreController(engine, settingsController, settingsLoader, filesManager, videoManager));
 
     engine->load(url);
 

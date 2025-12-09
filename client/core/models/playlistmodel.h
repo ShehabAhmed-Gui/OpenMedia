@@ -4,6 +4,7 @@
 #include <QAbstractListModel>
 #include <QObject>
 
+#include "../settingsloader.h"
 #include "../filesmanager.h"
 
 class PlaylistModel : public QAbstractListModel
@@ -13,9 +14,10 @@ class PlaylistModel : public QAbstractListModel
     Q_PROPERTY(qsizetype currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged FINAL)
 
 public:
-    PlaylistModel(const QSharedPointer<Settings> settings,
-              const QSharedPointer<FilesManager> filesManager,
-              QObject *parent = 0);
+    PlaylistModel(const QSharedPointer<SettingsController> settingsController,
+                  const QSharedPointer<SettingsLoader> settingsLoader,
+                  const QSharedPointer<FilesManager> filesManager,
+                  QObject *parent = 0);
 
     ~PlaylistModel();
 
@@ -49,7 +51,8 @@ signals:
 private:
     QVector<QString> m_data;
     QSharedPointer<FilesManager> m_filesManager;
-    QSharedPointer<Settings> m_settings;
+    QSharedPointer<SettingsController> m_settingsController;
+    QSharedPointer<SettingsLoader> m_settingsLoader;
     qsizetype m_currentIndex = 0;
 };
 

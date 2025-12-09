@@ -1,19 +1,18 @@
 #include "PlaylistModel.h"
 #include <qcolor.h>
 
-PlaylistModel::PlaylistModel(const QSharedPointer<Settings> settings,
-                     const QSharedPointer<FilesManager> filesManager,
-                     QObject *parent)
+PlaylistModel::PlaylistModel(const QSharedPointer<SettingsController> settingsController,
+                             const QSharedPointer<SettingsLoader> settingsLoader,
+                             const QSharedPointer<FilesManager> filesManager,
+                             QObject *parent)
     : QAbstractListModel{parent}
-    , m_settings(settings)
+    , m_settingsController(settingsController)
+    , m_settingsLoader(settingsLoader)
     , m_filesManager(filesManager)
 {
-
-    // TODO: implement SettingsLoader
     beginInsertRows(QModelIndex(), m_data.size(), m_data.size());
-    for (QString &item : m_settings->getKeys("Playlist")) {
-        const QString &playlistItem = m_settings->getSetting("Playlist", item).toString();
-        m_data.append(playlistItem);
+    for (const QString &file : m_settingsLoader->loadPlaylistSettings()) {
+        m_data.append(file);
     }
     endInsertRows();
 
@@ -23,12 +22,12 @@ PlaylistModel::PlaylistModel(const QSharedPointer<Settings> settings,
 PlaylistModel::~PlaylistModel()
 {
     // Remove old playlist saved items before saving current items
-    m_settings->removeGroup("Playlist");
+    m_settingsController->removeGroup("Playlist");
 
     for (int i = 0; i < m_data.size(); i++) {
         const QString &file = m_data[i];
         const QString &item = QString("Item") + QString::number(i);
-        m_settings->saveSetting("Playlist", item, file);
+        m_settingsController->saveSetting("Playlist", item, file);
     }
 }
 

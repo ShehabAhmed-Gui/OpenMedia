@@ -1,11 +1,10 @@
 #include "filesmanager.h"
 
-FilesManager::FilesManager(const QSharedPointer<Settings> settings,
+FilesManager::FilesManager(QSharedPointer<SettingsController> settingsController,
                            QObject *parent)
     : m_supportedFormats("*.mp3 *.mp4 *.wav *.mkv *.webm")
-    , m_settings(settings)
+    , m_settingsController(settingsController)
 {
-    m_defaultPath = m_settings->getSetting("VideosPath", "lastSelectedPath").toString().remove("file://");
     dialog = new QFileDialog();
 
     folderMonitor = new FolderMonitor(this);
@@ -21,6 +20,15 @@ FilesManager::~FilesManager()
 QVector<QString> FilesManager::selectFiles()
 {
     dialog->setOptions(QFileDialog::ReadOnly);
+
+    const QString mediaPath = m_settingsController->getMediaPath();
+
+    if (mediaPath.isEmpty()) {
+        qDebug() << "Could not get media path, falling back to default path";
+    } else {
+        m_defaultPath = mediaPath;
+    }
+
     m_loadedFiles = dialog->getOpenFileNames(nullptr, "Select A Bunch Of Videos", m_defaultPath, m_supportedFormats);
 
     if (m_loadedFiles.isEmpty()) {
@@ -29,7 +37,7 @@ QVector<QString> FilesManager::selectFiles()
     }
 
     const QString &videoPath = m_loadedFiles.last();
-    m_settings->saveSetting("VideosPath", "lastSelectedPath", videoPath);
+    m_settingsController->saveSetting("MediaPath", "mediaFolder", videoPath);
     m_defaultPath = videoPath;
 
 #ifdef Q_OS_LINUX

@@ -6,6 +6,7 @@
 #include <QQmlApplicationEngine>
 
 #include "settings.h"
+#include "settingsloader.h"
 #include "filesmanager.h"
 #include "videomanager.h"
 #include "frameprovider.h"
@@ -27,8 +28,10 @@ class CoreController : public QObject
     Q_OBJECT
 public:
     explicit CoreController(QQmlApplicationEngine *engine,
-                            const QSharedPointer<Settings> settings,
-                            const QSharedPointer<FilesManager> filesManager, const QSharedPointer<VideoManager> videoManager,
+                            const QSharedPointer<SettingsController> settingsController,
+                            const QSharedPointer<SettingsLoader> settingsLoader,
+                            const QSharedPointer<FilesManager> filesManager,
+                            const QSharedPointer<VideoManager> videoManager,
                             QObject *parent = nullptr);
 
 private:
@@ -44,7 +47,7 @@ private:
     QSharedPointer<FilesManager> m_filesManager;
     QSharedPointer<FilesController> m_filesController;
 
-    QSharedPointer<Settings> m_settings;
+    QSharedPointer<SettingsLoader> m_settingsLoader;
     QSharedPointer<SettingsController> m_settingsController;
 
     QSharedPointer<FrameProvider> m_frameProvider;
