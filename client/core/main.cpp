@@ -36,8 +36,11 @@ int main(int argc, char *argv[])
     QSharedPointer<SettingsController> settingsController;
     settingsController.reset(new SettingsController(settings, settingsLoader, &app));
 
+    QSharedPointer<FolderMonitor> folderMonitor;
+    folderMonitor.reset(new FolderMonitor(&app));
+
     QSharedPointer<FilesManager> filesManager;
-    filesManager.reset(new FilesManager(settingsController, &app));
+    filesManager.reset(new FilesManager(settingsController, folderMonitor, &app));
 
     // Don't give videoManager a parent
     // so it can be moved to a worker thread

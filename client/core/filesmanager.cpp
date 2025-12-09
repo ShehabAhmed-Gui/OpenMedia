@@ -1,15 +1,16 @@
 #include "filesmanager.h"
 
 FilesManager::FilesManager(QSharedPointer<SettingsController> settingsController,
+                           QSharedPointer<FolderMonitor> folderMonitor,
                            QObject *parent)
     : m_supportedFormats("*.mp3 *.mp4 *.wav *.mkv *.webm")
     , m_settingsController(settingsController)
+    , m_folderMonitor(folderMonitor)
 {
     dialog = new QFileDialog();
 
-    folderMonitor = new FolderMonitor(this);
-    connect(folderMonitor, &FolderMonitor::fileChanged, this, &FilesManager::fileChanged);
-    connect(folderMonitor, &FolderMonitor::fileChanged, this, &FilesManager::fileChanged);
+    connect(m_folderMonitor.get(), &FolderMonitor::fileChanged, this, &FilesManager::fileChanged);
+    connect(m_folderMonitor.get(), &FolderMonitor::fileChanged, this, &FilesManager::fileChanged);
 }
 
 FilesManager::~FilesManager()
@@ -30,7 +31,6 @@ QVector<QString> FilesManager::selectFiles()
     }
 
     m_loadedFiles = dialog->getOpenFileNames(nullptr, "Select A Bunch Of Videos", m_defaultPath, m_supportedFormats);
-
     if (m_loadedFiles.isEmpty()) {
         qDebug() << "User didn't select any files";
         return m_loadedFiles;
@@ -50,7 +50,7 @@ QVector<QString> FilesManager::selectFiles()
 #ifdef Q_OS_LINUX
         inuxFiles.append("file://" + file);
 #endif
-        folderMonitor->addPath(file);
+        m_folderMonitor->addPath(file);
     }
 
 #ifdef Q_OS_LINUX
