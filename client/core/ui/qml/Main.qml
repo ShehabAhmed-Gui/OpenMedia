@@ -12,7 +12,7 @@ ApplicationWindow {
     id: mainWindow
     readonly property bool isMobileTarget: Qt.platform.os === "android" || Qt.platform.os === "ios"
     readonly property string os: Qt.platform.os
-    readonly property bool soundMuted: SettingsController.getSetting("Audio", "muted")
+    readonly property bool soundMuted: SettingsController.isMuted()
 
     property alias videoState: mediaPlayer.playbackState
 
@@ -172,14 +172,14 @@ ApplicationWindow {
             videoOutput: videoOutput
             audioOutput: audioOutput
 
-            source: Qt.url(SettingsController.getSetting("Video", "video"))
+            source: Qt.url(SettingsController.getLastLoadedVideo())
             loops: VideoController.loopState? MediaPlayer.Infinite : 1
 
             onSeekableChanged: {
                 if (mediaPlayer.seekable) {
                     // Fixes a bug on windows
                     Qt.callLater(() => {
-                        mediaPlayer.position = SettingsController.getSetting("Video", "position") * 1000;
+                        mediaPlayer.position = SettingsController.getLastPosition();
                     });
                 }
             }
@@ -192,8 +192,8 @@ ApplicationWindow {
             Component.onCompleted: {
                 audioOutput.muted = soundMuted
 
-                mediaPlayer.audioOutput.volume = SettingsController.getSetting("Audio", "volume") / 100
-                mediaPlayer.source = SettingsController.getSetting("Video", "video")
+                mediaPlayer.audioOutput.volume = SettingsController.getVolume()
+                mediaPlayer.source = SettingsController.getLastLoadedVideo()
 
                 // Set loaded mediaPlayer to last-saved frame instead of black screen
                 mediaPlayer.play()

@@ -50,8 +50,6 @@ QVariant Settings::getSetting(const QString &group, QString key, const QVariant 
 
     m_settings->endGroup();
 
-    if (key == "muted") return value.toBool();
-
     if (!value.isNull()) {
         return value;
     }

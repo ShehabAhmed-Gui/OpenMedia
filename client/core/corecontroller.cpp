@@ -4,12 +4,14 @@
 #include <QFontDatabase>
 
 CoreController::CoreController(QQmlApplicationEngine *engine,
-                               const QSharedPointer<Settings> settings,
+                               const QSharedPointer<SettingsController> settingsController,
+                               const QSharedPointer<SettingsLoader> settingsLoader,
                                const QSharedPointer<FilesManager> filesManager,
                                const QSharedPointer<VideoManager> videoManager,
                                QObject *parent)
     : QObject{parent}
-    , m_settings(settings)
+    , m_settingsLoader(settingsLoader)
+    , m_settingsController(settingsController)
     , m_filesManager(filesManager)
     , m_videoManager(videoManager)
     , m_engine(engine)
@@ -38,14 +40,14 @@ void CoreController::loadFonts()
         int id = QFontDatabase::addApplicationFont(font);
 
         if (id == -1) {
-            qWarning() << "Failed to add font:" << font;
+            qCritical() << "Failed to add font:" << font;
         }
     }
 }
 
 void CoreController::initModels()
 {
-    m_listModel.reset(new PlaylistModel(m_settings, m_filesManager, this));
+    m_listModel.reset(new PlaylistModel(m_settingsController, m_settingsLoader, m_filesManager, this));
     m_engine->rootContext()->setContextProperty("PlaylistModel", m_listModel.get());
 
     m_metaDataModel.reset(new MetaDataModel(this));
@@ -56,7 +58,6 @@ void CoreController::initModels()
 
 void CoreController::initControllers()
 {
-    m_settingsController.reset(new SettingsController(m_settings, this));
     m_engine->rootContext()->setContextProperty("SettingsController", m_settingsController.get());
 
     m_filesController.reset(new FilesController(m_filesManager, this));

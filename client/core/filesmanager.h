@@ -9,14 +9,14 @@
 #include <QStandardPaths>
 #include <QProcess>
 
-#include "settings.h"
+#include "controllers/settingscontroller.h"
 #include "foldermonitor.h"
 
 class FilesManager : public QObject
 {
     Q_OBJECT
 public:
-    explicit FilesManager(const QSharedPointer<Settings> settings,
+    explicit FilesManager(QSharedPointer<SettingsController> settingsController,
                           QObject *parent = nullptr);
     ~FilesManager();
 
@@ -33,9 +33,9 @@ signals:
 private:
     QFileDialog *dialog;
     FolderMonitor *folderMonitor;
-    QSharedPointer<Settings> m_settings;
+    QSharedPointer<SettingsController> m_settingsController;
 
-    QString m_defaultPath;
+    QString m_defaultPath = QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
     QString m_supportedFormats;
     QString m_selected;
     QStringList m_loadedFiles;
