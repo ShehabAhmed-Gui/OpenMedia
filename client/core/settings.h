@@ -15,13 +15,9 @@ public:
     ~Settings();
 
     QStringList getKeys(QString group);
-
     void removeKey(const QString &group, const QString &key);
-
     void removeGroup(const QString &group);
-
     void saveSetting(const QString &group, QString key, QVariant data);
-
     QVariant getSetting(const QString &group, QString key, const QVariant &defaultValue = QVariant());
 
 private:
