@@ -20,7 +20,8 @@ QHash<int, QByteArray> MetaDataFilterProxyModel::roleNames() const
     QHash<int, QByteArray> roles;
 
     if (sourceModel()) {
-        roles = sourceModel()->roleNames(); // Get roles from source model
+        // Get roles from source model
+        roles = sourceModel()->roleNames();
     } else {
         roles = QSortFilterProxyModel::roleNames();
     }
