@@ -7,13 +7,14 @@ CoreController::CoreController(QQmlApplicationEngine *engine,
                                const QSharedPointer<SettingsController> settingsController,
                                const QSharedPointer<SettingsLoader> settingsLoader,
                                const QSharedPointer<FilesManager> filesManager,
-                               const QSharedPointer<VideoManager> videoManager,
+                               const QSharedPointer<VideoManager> videoManager, const QSharedPointer<FolderMonitor> folderMonitor,
                                QObject *parent)
     : QObject{parent}
     , m_settingsLoader(settingsLoader)
     , m_settingsController(settingsController)
     , m_filesManager(filesManager)
     , m_videoManager(videoManager)
+    , m_folderMonitor(folderMonitor)
     , m_engine(engine)
 {
     loadFonts();
@@ -47,7 +48,7 @@ void CoreController::loadFonts()
 
 void CoreController::initModels()
 {
-    m_listModel.reset(new PlaylistModel(m_settingsController, m_settingsLoader, m_filesManager, this));
+    m_listModel.reset(new PlaylistModel(m_settingsController, m_settingsLoader, m_filesManager, m_folderMonitor, this));
     m_engine->rootContext()->setContextProperty("PlaylistModel", m_listModel.get());
 
     m_metaDataModel.reset(new MetaDataModel(this));

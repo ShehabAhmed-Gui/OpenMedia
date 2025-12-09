@@ -32,6 +32,7 @@ public:
                             const QSharedPointer<SettingsLoader> settingsLoader,
                             const QSharedPointer<FilesManager> filesManager,
                             const QSharedPointer<VideoManager> videoManager,
+                            const QSharedPointer<FolderMonitor> folderMonitor,
                             QObject *parent = nullptr);
 
 private:
@@ -51,6 +52,7 @@ private:
     QSharedPointer<SettingsController> m_settingsController;
 
     QSharedPointer<FrameProvider> m_frameProvider;
+    QSharedPointer<FolderMonitor> m_folderMonitor;
 
     QSharedPointer<VideoManager> m_videoManager;
     QSharedPointer<VideoController> m_videoController;

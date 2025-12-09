@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 #endif
 
     QScopedPointer<CoreController> coreController;
-    coreController.reset(new CoreController(engine, settingsController, settingsLoader, filesManager, videoManager));
+    coreController.reset(new CoreController(engine, settingsController, settingsLoader, filesManager, videoManager, folderMonitor));
 
     engine->load(url);
 

@@ -4,15 +4,19 @@
 PlaylistModel::PlaylistModel(const QSharedPointer<SettingsController> settingsController,
                              const QSharedPointer<SettingsLoader> settingsLoader,
                              const QSharedPointer<FilesManager> filesManager,
+                             const QSharedPointer<FolderMonitor> folderMonitor,
                              QObject *parent)
     : QAbstractListModel{parent}
     , m_settingsController(settingsController)
     , m_settingsLoader(settingsLoader)
     , m_filesManager(filesManager)
+    , m_folderMonitor(folderMonitor)
 {
     beginInsertRows(QModelIndex(), m_data.size(), m_data.size());
     for (const QString &file : m_settingsLoader->loadPlaylistSettings()) {
         m_data.append(file);
+        // Add file path to be monitored
+        m_folderMonitor->addPath(file);
     }
     endInsertRows();
 
