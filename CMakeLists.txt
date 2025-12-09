@@ -14,10 +14,6 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS
     Core Gui Quick QuickControls2 Widgets
     Multimedia MultimediaWidgets)
 
-find_package(Qt6 REQUIRED COMPONENTS LinguistTools)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-
 set(SOURCES
     client/core/main.cpp
     client/core/settings.cpp
@@ -62,8 +58,7 @@ qt_add_executable(OpenMedia
     client/core/controllers/videocontroller.h client/core/controllers/videocontroller.cpp
     client/core/frameprovider.h client/core/frameprovider.cpp
     client/core/thumbnailsextractor.h client/core/thumbnailsextractor.cpp
-
-
+    client/core/foldermonitor.h client/core/foldermonitor.cpp
 )
 
 # qt_add_translations(OpenMedia TS_FILES client/core//translation/OpenMedia_en_US.ts)
@@ -88,8 +83,6 @@ target_link_libraries(OpenMedia PRIVATE
     Qt6::MultimediaWidgets
     PkgConfig::LIBAV
 )
-target_link_libraries(OpenMedia PRIVATE Qt6::Core)
-target_link_libraries(OpenMedia PRIVATE Qt6::Core)
 
 include(GNUInstallDirs)
 install(TARGETS OpenMedia
