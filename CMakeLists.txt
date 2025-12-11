@@ -74,7 +74,7 @@ pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
 qt_add_executable(OpenMedia
     WIN32
     ${SOURCES}
-    ${HEADERS} 
+    ${HEADERS}
 )
 
 set_target_properties(OpenMedia PROPERTIES
@@ -95,6 +95,7 @@ target_link_libraries(OpenMedia PRIVATE
     Qt6::Widgets
     Qt6::Multimedia
     Qt6::MultimediaWidgets
+
     PkgConfig::LIBAV
 )
 
