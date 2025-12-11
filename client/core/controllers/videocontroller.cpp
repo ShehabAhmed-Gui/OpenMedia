@@ -8,6 +8,7 @@ VideoController::VideoController(QSharedPointer<VideoManager> videoManager,
     connect(m_videoManager.get(), &VideoManager::frameUpdated, this, &VideoController::frameUpdated);
     connect(m_videoManager.get(), &VideoManager::extractingInProgress, this, &VideoController::extractingInProgress);
     connect(m_videoManager.get(), &VideoManager::extractedVideoThumbnails, this, &VideoController::extractedVideoThumbnails);
+    connect(m_videoManager.get(), &VideoManager::playMediaFile, this, &VideoController::playMediaFile);
 
     workerThread = new QThread(this);
     m_videoManager->moveToThread(workerThread);

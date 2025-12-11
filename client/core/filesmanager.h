@@ -17,6 +17,7 @@ class FilesManager : public QObject
     Q_OBJECT
 public:
     explicit FilesManager(QSharedPointer<SettingsController> settingsController,
+                          QSharedPointer<FolderMonitor> folderMonitor,
                           QObject *parent = nullptr);
     ~FilesManager();
 
@@ -32,7 +33,7 @@ signals:
 
 private:
     QFileDialog *dialog;
-    FolderMonitor *folderMonitor;
+    QSharedPointer<FolderMonitor> m_folderMonitor;
     QSharedPointer<SettingsController> m_settingsController;
 
     QString m_defaultPath = QStandardPaths::writableLocation(QStandardPaths::MusicLocation);

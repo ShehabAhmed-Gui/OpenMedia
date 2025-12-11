@@ -12,7 +12,6 @@ class Settings : public QObject
 
 public:
     explicit Settings(QObject *parent = nullptr);
-    ~Settings();
 
     QStringList getKeys(QString group);
     void removeKey(const QString &group, const QString &key);

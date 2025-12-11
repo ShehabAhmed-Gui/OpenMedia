@@ -7,9 +7,6 @@ Settings::Settings(QObject *parent)
     m_settingsLocation = m_settings->fileName();
 }
 
-Settings::~Settings()
-{}
-
 QStringList Settings::getKeys(QString group)
 {
     m_settings->beginGroup(group);

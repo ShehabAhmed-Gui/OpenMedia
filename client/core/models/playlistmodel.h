@@ -17,6 +17,7 @@ public:
     PlaylistModel(const QSharedPointer<SettingsController> settingsController,
                   const QSharedPointer<SettingsLoader> settingsLoader,
                   const QSharedPointer<FilesManager> filesManager,
+                  const QSharedPointer<FolderMonitor> folderMonitor,
                   QObject *parent = 0);
 
     ~PlaylistModel();
@@ -53,6 +54,7 @@ private:
     QSharedPointer<FilesManager> m_filesManager;
     QSharedPointer<SettingsController> m_settingsController;
     QSharedPointer<SettingsLoader> m_settingsLoader;
+    QSharedPointer<FolderMonitor> m_folderMonitor;
     qsizetype m_currentIndex = 0;
 };
 
