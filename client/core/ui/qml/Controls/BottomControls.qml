@@ -25,11 +25,11 @@ Rectangle {
     property alias bottomMA: bottomControlsMouseArea
 
     function seekBackward() {
-        mediaPlayer.position = mediaPlayer.position -= 10000
+        mediaPlayer.position -= 10000
     }
 
     function seekForward() {
-        mediaPlayer.position = mediaPlayer.position += 10000
+        mediaPlayer.position += 10000
     }
 
     function formatTime(fullVideoDuration, currentDuration) {
@@ -71,7 +71,7 @@ Rectangle {
                 String(totalRemainingSecs).padStart(2, "0");
         }
 
-        // final YouTube style: spent / full
+        // final style: spent / full
         return formattedCurrent + " / " + formattedFull;
     }
 
@@ -261,7 +261,7 @@ Rectangle {
 
             onMoved: {
                 if (userChangingSlider) {
-                    mediaPlayer.position = videoSlider.value
+                    mediaPlayer.setPosition(videoSlider.value)
                 }
             }
 
@@ -274,8 +274,7 @@ Rectangle {
             Connections {
                 target: mediaPlayer
                 function onPositionChanged() {
-                    // Playing next mediaPlayer once current mediaPlayer ends in case loop is disabled
-
+                    // Playing next media file once current media file ends in case loop is disabled
                     if (!VideoController.loopState) {
                         if (mediaPlayer.position === mediaPlayer.duration){
                             playlist.listView.playNext()
