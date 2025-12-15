@@ -1,6 +1,6 @@
 # OpenMedia
 ## _Media Player Application_
-OpenMedia is a media player application. plays local media files from your computer.
+OpenMedia is a multi media player application. plays local media files from your computer.
 
 ## Features
 - OpenMedia saves settings such as volume level, playlist items, etc...
@@ -13,30 +13,32 @@ OpenMedia is a media player application. plays local media files from your compu
 
 [Telegram](https://t.me/ShehabGuii)
 
+Discord: shehab6600 
+
 ## Tech
 
-OpenMedia uses several open-source projects to work:
+OpenMedia uses several projects to work:
 
 - [Qt](https://www.qt.io/)
 
 ## Development
 
-It is a personal project, But feel free to contribute.
+Feel free to contribute.
 
 ## Building source
 ## Required tools for building the appliaction on windows
 
-1. First you need **Qt 6.9.2** (Tested version, You can use other Qt6 versions and see if it works). 
-You can download Qt for Windows and Linux from here: [Qt online installer](https://www.qt.io/download-open-source)
+1. First you need **Qt 6.9.2** (you can use other Qt6 versions). 
+You can download Qt for your platform from here: [Qt online installer](https://www.qt.io/download-open-source)
 
-2. Install CMake if it's not already installed. Recommended CMake version is 3.25, Install CMake from [here](https://cmake.org/download/)
+2. Install CMake if it's not already installed. Install CMake from [here](https://cmake.org/download/)
 
-### Required Qt modules to be installed:
+### Required Qt modules and libraries to be installed:
 
 - Qt Shader Tools
 - Qt Network
 - Qt Multimedia
-
+- FFmpeg C libs
 ## How to build the project
 If you are using **QtCreator** or **Visual studio** you can directly open the **CMakeLists.txt** file and configure the project with the desired Qt Version
 
