@@ -9,11 +9,9 @@ Item {
 
     property alias volumeSlider: volumeSlider
     property alias muteButton: muteButton
-    property int volumeLevel
+    property int volumeLevel: MediaPlayerController.volume
 
-    function setMuted(muted) {
-        mediaPlayer.audioOutput.muted = muted
-    }
+    property bool muted: MediaPlayerController.muted
 
     RowLayout {
         id: audioRL
@@ -24,10 +22,10 @@ Item {
             id: muteButton
 
             ToolTipType {
-                toolTipText: mediaPlayer.audioOutput.muted? "Unmute" : "Mute"
+                toolTipText: muted? "Unmute" : "Mute"
             }
 
-              iconSource: ( mediaPlayer.audioOutput.muted || volumeLevel === 0? "qrc:/ui/icons/svg/muted.svg" : volumeLevel < 70
+            iconSource: (muted || volumeLevel === 0? "qrc:/ui/icons/svg/muted.svg" : volumeLevel < 70
                    ? "qrc:/ui/icons/svg/volume_low.svg"
                    : "qrc:/ui/icons/svg/volume_high.svg")
             iconWidth: 13
@@ -37,7 +35,7 @@ Item {
                 anchors.fill: parent
                 cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
                 onClicked: {
-                    setMuted(!mediaPlayer.audioOutput.muted)
+                    MediaPlayerController.muted = !MediaPlayerController.muted
                 }
             }
         }
@@ -57,22 +55,21 @@ Item {
 
             from: 0
             to: 100
-            value: (mediaPlayer.audioOutput.volume * 100).toFixed()
+            value: MediaPlayerController.volume * 100
 
             onValueChanged: {
                 volumeLevel = value
-                mediaPlayer.audioOutput.volume = volumeSlider.value / 100
-                // mediaPlayer = true
+                MediaPlayerController.volume = volumeSlider.value / 100
             }
 
-            Connections {
-                target: mediaPlayer.audioOutput
-                property int videoVolume
-                function onVolumeChanged() {
-                    videoVolume = mediaPlayer.audioOutput.volume * 100
-                    volumeSlider.value = videoVolume
-                }
-            }
+            // Connections {
+            //     target: mediaPlayer.audioOutput
+            //     property int videoVolume
+            //     function onVolumeChanged() {
+            //         videoVolume = mediaPlayer.audioOutput.volume * 100
+            //         volumeSlider.value = videoVolume
+            //     }
+            // }
 
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter

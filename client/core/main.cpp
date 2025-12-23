@@ -8,6 +8,8 @@
 #include "settingsloader.h"
 #include "corecontroller.h"
 
+#include "mediaplayer.h"
+
 #include <QLoggingCategory>
 
 using namespace std;

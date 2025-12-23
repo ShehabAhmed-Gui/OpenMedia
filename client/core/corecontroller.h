@@ -10,6 +10,7 @@
 #include "filesmanager.h"
 #include "videomanager.h"
 #include "frameprovider.h"
+#include "mediaplayer.h"
 
 // Models
 #include "models/playlistmodel.h"
@@ -22,6 +23,10 @@
 #include "controllers/settingscontroller.h"
 #include "controllers/filescontroller.h"
 #include "controllers/videocontroller.h"
+#include "controllers/mediaplayercontroller.h"
+
+// QML elements
+#include "videoitem.h"
 
 class CoreController : public QObject
 {
@@ -51,14 +56,20 @@ private:
     QSharedPointer<SettingsLoader> m_settingsLoader;
     QSharedPointer<SettingsController> m_settingsController;
 
+    QSharedPointer<MediaPlayer> m_mediaPlayer;
+    QSharedPointer<MediaPlayerController> m_mediaPlayerController;
+
     QSharedPointer<FrameProvider> m_frameProvider;
     QSharedPointer<FolderMonitor> m_folderMonitor;
 
     QSharedPointer<VideoManager> m_videoManager;
     QSharedPointer<VideoController> m_videoController;
 
+    QSharedPointer<VideoItem> m_videoItem;
+
     void initModels();
     void initControllers();
+    void initQmlElements();
 };
 
 #endif // CORECONTROLLER_H

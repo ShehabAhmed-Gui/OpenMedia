@@ -7,14 +7,14 @@ SettingsController::SettingsController(QSharedPointer<Settings> settings,
     , m_settings(settings)
     , m_settingsLoader(settingsLoader)
 {
-    QJsonObject volumeSettings = m_settingsLoader->loadVolumeSettings();
-    muted = volumeSettings.value("muted").toBool();
-    volumeLevel = volumeSettings.value("volume").toDouble();
+    // QJsonObject volumeSettings = m_settingsLoader->loadVolumeSettings();
+    // muted = volumeSettings.value("muted").toBool();
+    // volumeLevel = volumeSettings.value("volume").toDouble();
 
-    QJsonObject videoSettings = m_settingsLoader->loadVideoSettings();
-    mediaPath = videoSettings.value("mediaFolder").toString();
-    lastLoadedVideo = videoSettings.value("videoPath").toString();
-    lastPosition = videoSettings.value("position").toDouble();
+    // QJsonObject videoSettings = m_settingsLoader->loadVideoSettings();
+    // mediaPath = videoSettings.value("mediaFolder").toString();
+    // lastLoadedVideo = videoSettings.value("videoPath").toString();
+    // lastPosition = videoSettings.value("position").toDouble();
 }
 
 QVariant SettingsController::getSetting(const QString &group, const QString &key, const QVariant &defaultValue)

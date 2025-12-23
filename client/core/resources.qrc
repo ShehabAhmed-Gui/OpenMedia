@@ -42,5 +42,9 @@
         <file>ui/icons/svg/music_media.svg</file>
         <file>ui/qml/pages/SettingsShortcutsSubPage.qml</file>
         <file>ui/qml/pages/Settings.qml</file>
+        <file>ui/shaders/yuv.frag</file>
+        <file>ui/shaders/yuv.frag.qsb</file>
+        <file>ui/shaders/yuv.vert</file>
+        <file>ui/shaders/yuv.vert.qsb</file>
     </qresource>
 </RCC>

@@ -15,7 +15,7 @@ Rectangle {
     border.width: 0.5
     radius: 7
 
-    property bool isCurrentlyPlaying: mediaPlayer.source.toString().toLowerCase() === path.toLowerCase()
+    property bool isCurrentlyPlaying: MediaPlayerController.source().toString().toLowerCase() === path.toLowerCase()
     property bool isMusicFile: path.endsWith(".mp3")
 
     function setCurrentIndex() {
@@ -68,16 +68,16 @@ Rectangle {
             }
         }
 
-        iconWidth: isCurrentlyPlaying && videoState === MediaPlayer.PlayingState? 22 : 24
-        iconHeight: isCurrentlyPlaying && videoState === MediaPlayer.PlayingState? 22 : 24
+        iconWidth: isCurrentlyPlaying && videoState === Playback.Playing? 22 : 24
+        iconHeight: isCurrentlyPlaying && videoState === Playback.Playing? 22 : 24
         width: 24
         height: 24
 
         ToolTipType {
             toolTipText: {
-                if (isMusicFile && (!isCurrentlyPlaying || videoState !== MediaPlayer.PlayingState)) {
+                if (isMusicFile && (!isCurrentlyPlaying || videoState !== Playback.Playing)) {
                     "Play this music"
-                } else if (path.endsWith(".mp3") && videoState === MediaPlayer.PlayingState && isCurrentlyPlaying) {
+                } else if (path.endsWith(".mp3") && videoState === Playback.Playing && isCurrentlyPlaying) {
                     "Stop this music"
                 } else if (videoState === MediaPlayer.PlayingState && isCurrentlyPlaying) {
                     "Stop this video"
@@ -94,11 +94,11 @@ Rectangle {
             onClicked: {
                 setCurrentIndex();
 
-                if (isCurrentlyPlaying && mediaPlayer.playbackState === MediaPlayer.PlayingState) {
-                    mediaPlayer.pause()
+                if (isCurrentlyPlaying && MediaPlayerController.playbackState() === Playback.Playing) {
+                    MediaPlayerController.stop()
                 } else {
-                    mediaPlayer.source = path
-                    mediaPlayer.play()
+                    MediaPlayerController.open(path)
+                    MediaPlayerController.play()
                 }
             }
         }

@@ -18,7 +18,7 @@ Rectangle {
     property alias audioType: audioControl
     property alias playBackSpeedType: playBackSpeed
 
-    property string videoSource: mediaPlayer.source
+    property string videoSource: MediaPlayerController.source()
 
     property bool isMediaSliderPressed: videoSlider.pressed || audioControl.volumeSlider.pressed || playBackSpeed.playbackSlider.pressed
     property alias bottomOpacityRect: bottomOpacity
@@ -89,6 +89,14 @@ Rectangle {
     }
 
     Connections {
+        target: MediaPlayerController
+
+        function onMutedChanged() {
+            audioControl.muted = MediaPlayerController.muted
+        }
+    }
+
+    Connections {
         target: VideoController
 
         function onExtractingInProgress() {
@@ -150,7 +158,7 @@ Rectangle {
 
         Text {
             id: videoTime
-            text: formatTime(mediaPlayer.duration, videoSlider.value)
+            text: formatTime(MediaPlayerController.duration, videoSlider.value)
             color: "#ffffff"
 
             font.pixelSize: 13
@@ -167,8 +175,7 @@ Rectangle {
             live: true
 
             property bool enableHandler: false
-            property int videoDuration: mediaPlayer.duration
-
+            property int videoDuration: MediaPlayerController.duration
             Layout.minimumWidth: parent.width - 120
             Layout.minimumHeight: 7
 
@@ -268,22 +275,22 @@ Rectangle {
             onValueChanged: {
                 userChangingSlider = true
                 userInteractionTimer.restart()
-                mediaPlayer.videoOutput.focus = true
             }
 
-            Connections {
-                target: mediaPlayer
-                function onPositionChanged() {
-                    // Playing next media file once current media file ends in case loop is disabled
-                    if (!VideoController.loopState) {
-                        if (mediaPlayer.position === mediaPlayer.duration){
-                            playlist.listView.playNext()
-                        }
-                    }
+            // TODO: implement position
+            // Connections {
+            //     target: mediaPlayer
+            //     function onPositionChanged() {
+            //         // Playing next media file once current media file ends in case loop is disabled
+            //         if (!VideoController.loopState) {
+            //             if (mediaPlayer.position === mediaPlayer.duration){
+            //                 playlist.listView.playNext()
+            //             }
+            //         }
 
-                    videoSlider.value = mediaPlayer.position
-                }
-            }
+            //         videoSlider.value = mediaPlayer.position
+            //     }
+            // }
         }
     }
 
@@ -335,14 +342,14 @@ Rectangle {
 
         CustomButton {
             id: startStopButton
-            iconSource: mediaPlayer.playbackState === MediaPlayer.PlayingState
+            iconSource: videoState === Playback.Playing
                         ? "qrc:/ui/icons/svg/stop.svg"
                         : "qrc:/ui/icons/svg/play.svg"
             iconWidth: 30
             iconHeight: 30
 
             ToolTipType {
-                toolTipText: mediaPlayer.playbackState === MediaPlayer.PlayingState? "Stop" : "Play"
+                toolTipText: videoState === Playback.Playing? "Stop" : "Play"
             }
 
             onHoverBackgroundColor: "transparent"
@@ -351,9 +358,7 @@ Rectangle {
                 anchors.fill: parent
                 cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
 
-                onClicked: mediaPlayer.playbackState === MediaPlayer.PlayingState
-                           ? mediaPlayer.pause()
-                           : mediaPlayer.play()
+                onClicked: MediaPlayerController.pause_resume()
             }
         }
 
