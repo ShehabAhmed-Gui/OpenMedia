@@ -11,9 +11,9 @@
 
 struct Clock {
     QElapsedTimer clock;
-    int pausedStartMs;
-    int pausedAccumulatedMs;
-    int alignment_offset;
+    int pausedStartMs = 0;
+    int pausedAccumulatedMs = 0;
+    int alignment_offset = 0;
 
     void start() {
         clock.start();
