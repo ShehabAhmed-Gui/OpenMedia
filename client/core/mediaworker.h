@@ -2,6 +2,7 @@
 #define MEDIAWORKER_H
 
 #include <QObject>
+#include "controllers/videocontroller.h"
 #include "demuxer.h"
 #include "decoder.h"
 #include "defs.h"
@@ -28,7 +29,8 @@ class MediaWorker : public QObject
 {
     Q_OBJECT
 public:
-    explicit MediaWorker(QSharedPointer<Demuxer> demuxer,
+    explicit MediaWorker(QSharedPointer<VideoController> videoController,
+                         QSharedPointer<Demuxer> demuxer,
                          QObject *parent = nullptr);
 
     void stop();
@@ -42,12 +44,11 @@ signals:
     void videoFrameReady(const QImage &frame);
     void audioFrameReady(const QByteArray &pcm);
 
-    // Used to quit the thread
-    void finished();
-
 private:
-    Clock clock;
+    QSharedPointer<VideoController> m_videoController;
     QSharedPointer<Demuxer> m_demuxer;
+    Clock clock;
+
     Decoder videoDecoder;
     Decoder audioDecoder;
     bool m_running = false;

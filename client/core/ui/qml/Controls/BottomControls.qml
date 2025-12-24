@@ -18,7 +18,7 @@ Rectangle {
     property alias audioType: audioControl
     property alias playBackSpeedType: playBackSpeed
 
-    property string videoSource: MediaPlayerController.source()
+    property string videoSource: MediaPlayerController.source
 
     property bool isMediaSliderPressed: videoSlider.pressed || audioControl.volumeSlider.pressed || playBackSpeed.playbackSlider.pressed
     property alias bottomOpacityRect: bottomOpacity
@@ -277,20 +277,20 @@ Rectangle {
                 userInteractionTimer.restart()
             }
 
-            // TODO: implement position
-            // Connections {
-            //     target: mediaPlayer
-            //     function onPositionChanged() {
-            //         // Playing next media file once current media file ends in case loop is disabled
-            //         if (!VideoController.loopState) {
-            //             if (mediaPlayer.position === mediaPlayer.duration){
-            //                 playlist.listView.playNext()
-            //             }
-            //         }
+            Connections {
+                target: MediaPlayerController
+                function onPositionChanged() {
+                    // Play next media file once current media file ends in case loop is disabled
+                    //if (!VideoController.loopState) {
+                        // if (MediaPlayerController.position === MediaPlayerController.duration){
+                        //     console.log("called");
+                        //     playlist.listView.playNext()
+                        // }
+                    //}
 
-            //         videoSlider.value = mediaPlayer.position
-            //     }
-            // }
+                    videoSlider.value = MediaPlayerController.position
+                }
+            }
         }
     }
 

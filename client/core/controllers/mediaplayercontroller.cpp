@@ -11,16 +11,13 @@ MediaPlayerController::MediaPlayerController(QSharedPointer<MediaPlayer> mediaPl
     connect(m_mediaPlayer.get(), &MediaPlayer::videoFrameReady, this, &MediaPlayerController::videoFrameReady);
 
     connect(m_mediaPlayer.get(), &MediaPlayer::mutedChanged, this, &MediaPlayerController::mutedChanged);
+    connect(m_mediaPlayer.get(), &MediaPlayer::sourceChanged, this, &MediaPlayerController::sourceChanged);
+    connect(m_mediaPlayer.get(), &MediaPlayer::positionChanged, this, &MediaPlayerController::positionChanged);
 }
 
-double MediaPlayerController::duration()
+void MediaPlayerController::open(const QString &file)
 {
-    return m_mediaPlayer->duration();
-}
-
-bool MediaPlayerController::open(const QString &file)
-{
-    return m_mediaPlayer->open(file);
+    m_mediaPlayer->open(file);
 }
 
 void MediaPlayerController::play()
@@ -43,16 +40,6 @@ void MediaPlayerController::pause_resume()
     m_mediaPlayer->pause_resume();
 }
 
-QString MediaPlayerController::source()
-{
-    return m_mediaPlayer->source();
-}
-
-Playback::PlaybackState MediaPlayerController::playbackState()
-{
-    return m_mediaPlayer->playbackState();
-}
-
 double MediaPlayerController::volume()
 {
     return m_mediaPlayer->volume();
@@ -63,17 +50,52 @@ void MediaPlayerController::setVolume(double volume)
     m_mediaPlayer->setVolume(volume);
 }
 
-void MediaPlayerController::setMuted(bool muted)
-{
-    m_mediaPlayer->setMuted(muted);
-}
-
 bool MediaPlayerController::muted() const
 {
     return m_mediaPlayer->muted();
 }
 
+void MediaPlayerController::setMuted(bool muted)
+{
+    m_mediaPlayer->setMuted(muted);
+}
+
+double MediaPlayerController::duration()
+{
+    return m_mediaPlayer->duration();
+}
+
 void MediaPlayerController::setDuration(double newDuration)
 {
     m_mediaPlayer->setDuration(newDuration);
+}
+
+double MediaPlayerController::position() const
+{
+    return m_mediaPlayer->position();
+}
+
+void MediaPlayerController::setPosition(double newPosition)
+{
+    m_mediaPlayer->setPosition(newPosition);
+}
+
+QString MediaPlayerController::source()
+{
+    return m_mediaPlayer->source();
+}
+
+void MediaPlayerController::setSource(const QString &newSource)
+{
+    m_mediaPlayer->setSource(newSource);
+}
+
+Playback::PlaybackState MediaPlayerController::playbackState()
+{
+    return m_mediaPlayer->playbackState();
+}
+
+void MediaPlayerController::setPlaybackState(const Playback::PlaybackState &newPlaybackState)
+{
+    m_mediaPlayer->setPlaybackState(newPlaybackState);
 }

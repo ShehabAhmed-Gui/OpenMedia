@@ -69,7 +69,7 @@ void CoreController::initControllers()
     m_videoController.reset(new VideoController(m_videoManager, this));
     m_engine->rootContext()->setContextProperty("VideoController", m_videoController.get());
 
-    m_mediaPlayer.reset(new MediaPlayer(m_videoManager, this));
+    m_mediaPlayer.reset(new MediaPlayer(m_videoController, this));
     m_mediaPlayerController.reset(new MediaPlayerController(m_mediaPlayer, this));
 
     // Register Playback namespace to QML

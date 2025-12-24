@@ -1,43 +1,40 @@
 #include "mediaplayer.h"
 
-MediaPlayer::MediaPlayer(QSharedPointer<VideoManager> videoManager,
+MediaPlayer::MediaPlayer(QSharedPointer<VideoController> videoController,
                          QObject *parent)
     : QObject{parent}
-    , m_videoManager(videoManager)
+    , m_videoController(videoController)
 {
     m_demuxer.reset(new Demuxer());
     m_audioPlayer.reset(new AudioPlayer(this));
 
-    // audio signals
     connect(m_audioPlayer.get(), &AudioPlayer::muteChanged, this, &MediaPlayer::mutedChanged);
 
     workerThread = new QThread(this);
-    mediaWorker = new MediaWorker(m_demuxer);
+    mediaWorker = new MediaWorker(videoController, m_demuxer);
 
     mediaWorker->moveToThread(workerThread);
     connect(mediaWorker, &MediaWorker::audioFrameReady, this, &MediaPlayer::onAudioFrameReady);
     connect(mediaWorker, &MediaWorker::videoFrameReady, this, &MediaPlayer::onVideoFrameReady);
-    connect(mediaWorker, &MediaWorker::finished, workerThread, &QThread::quit);
     connect(workerThread, &QThread::finished, mediaWorker, &QObject::deleteLater);
     workerThread->start();
 }
 
 MediaPlayer::~MediaPlayer()
 {
+    mediaWorker->stop();
     workerThread->quit();
     workerThread->wait();
 }
 
-bool MediaPlayer::open(const QString &file)
+void MediaPlayer::open(const QString &file)
 {
     videoState = new VideoState;
     m_demuxer->open(videoState, file);
     QMetaObject::invokeMethod(mediaWorker, "open", videoState);
 
-    // Extract video thumbnails
-    m_videoManager->extractVideoThumbnails(file);
     emit durationChanged();
-    return true;
+    emit sourceChanged();
 }
 
 void MediaPlayer::play()
@@ -84,14 +81,6 @@ void MediaPlayer::seek(double timestamp)
     // }
 }
 
-QString MediaPlayer::source()
-{
-    if (!videoState) {
-        return QString("");
-    }
-    return videoState->fileName;
-}
-
 long MediaPlayer::framesCount() const
 {
     if (!videoState) {
@@ -99,6 +88,20 @@ long MediaPlayer::framesCount() const
     }
 
     return videoState->video_st->nb_frames;
+}
+
+QString MediaPlayer::source()
+{
+    if (!videoState) {
+        return QString("");
+    }
+
+    return videoState->fileName;
+}
+
+void MediaPlayer::setSource(const QString &newSource)
+{
+    videoState->fileName = newSource;
 }
 
 bool MediaPlayer::muted() const
@@ -157,8 +160,17 @@ double MediaPlayer::position() const
         return -1;
     }
 
-    // TODO: get pos from avframe
-    return 0.0;
+    AVRational tb = videoState->video_st->time_base;
+    double seconds = videoState->position * av_q2d(tb);
+    return qFloor(seconds * 1000);
+}
+
+void MediaPlayer::setPosition(double newPosition)
+{
+    if (qFuzzyCompare(m_position, newPosition))
+        return;
+    m_position = newPosition;
+    emit positionChanged();
 }
 
 void MediaPlayer::onAudioFrameReady(const QByteArray &pcm)
@@ -169,12 +181,5 @@ void MediaPlayer::onAudioFrameReady(const QByteArray &pcm)
 void MediaPlayer::onVideoFrameReady(const QImage &frame)
 {
     emit videoFrameReady(frame);
-}
-
-void MediaPlayer::setPosition(double newPosition)
-{
-    if (qFuzzyCompare(m_position, newPosition))
-        return;
-    m_position = newPosition;
     emit positionChanged();
 }

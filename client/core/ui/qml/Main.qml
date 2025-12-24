@@ -67,9 +67,9 @@ ApplicationWindow {
         target: MediaPlayerController
 
         function onPlaybackStateChanged() {
-            videoState = MediaPlayerController.playbackState()
+            videoState = MediaPlayerController.playbackState
             if (videoState === Playback.Playing) {
-                var fileUrl = MediaPlayerController.source();
+                var fileUrl = MediaPlayerController.source;
                 var fileName = fileUrl.split("/").pop();  // Extract filename from path
 
                 var parts = fileName.split(".");

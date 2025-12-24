@@ -114,6 +114,12 @@ int Demuxer::getAudioStreamIndex()
     return st_index[AVMEDIA_TYPE_AUDIO];
 }
 
+void Demuxer::seek(VideoState *state, double target)
+{
+    int64_t seek_target = av_rescale_q(target, AVRational{1,1}, state->video_st->time_base);
+    av_seek_frame(fc, state->video_st_index, seek_target, AVSEEK_FLAG_ANY);
+}
+
 bool Demuxer::checkStreamType(AVCodecParameters *codecpar)
 {
     AVMediaType type = codecpar->codec_type;

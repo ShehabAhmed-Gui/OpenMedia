@@ -108,10 +108,8 @@ Rectangle {
                     return;
                 }
 
-                mediaPlayer.source = source
-                Qt.callLater(() => {
-                    mediaPlayer.play()
-                });
+                // TODO: implement this
+                //MediaPlayerController.changeMediaFile(source)
             }
 
             onPlayPrevious: {

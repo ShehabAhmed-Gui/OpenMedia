@@ -1,10 +1,12 @@
 #include "mediaworker.h"
 #include <qthread.h>
 
-MediaWorker::MediaWorker(QSharedPointer<Demuxer> demuxer,
+MediaWorker::MediaWorker(QSharedPointer<VideoController> videoController,
+                         QSharedPointer<Demuxer> demuxer,
                          QObject *parent)
     : QObject{parent}
     , m_demuxer(demuxer)
+    , m_videoController(videoController)
 {
 }
 
@@ -24,9 +26,13 @@ void MediaWorker::open(VideoState *state)
         }
     }
 
+    QMetaObject::invokeMethod(
+        m_videoController.get(),
+        "extractVideoThumbnails",
+        Q_ARG(QString, state->fileName)
+        );
+
     clock.start();
-    clock.pausedAccumulatedMs = 0;
-    clock.alignment_offset = 0;
 }
 
 void MediaWorker::start(VideoState *state)
@@ -57,7 +63,6 @@ void MediaWorker::start(VideoState *state)
                     );
 
                 if (clock.alignment_offset == 0) {
-                    // wall_time - media_time
                     clock.alignment_offset =
                         clock.clock.elapsed()
                         - clock.pausedAccumulatedMs
@@ -75,6 +80,7 @@ void MediaWorker::start(VideoState *state)
                     QThread::msleep(delay);
                 }
 
+                state->position = vp->pts;
                 emit videoFrameReady(frame);
                 av_packet_free(&vp);
             }
@@ -85,6 +91,7 @@ void MediaWorker::start(VideoState *state)
             if (ap) {
                 QByteArray pcm;
                 audioDecoder.decode_audio_frame(pcm, ap);
+
                 emit audioFrameReady(pcm);
                 av_packet_free(&ap);
             }
@@ -93,7 +100,6 @@ void MediaWorker::start(VideoState *state)
 
     videoDecoder.flush();
     audioDecoder.flush();
-    emit finished();
 }
 
 void MediaWorker::stop()

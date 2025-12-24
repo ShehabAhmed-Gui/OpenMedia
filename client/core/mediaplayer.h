@@ -3,10 +3,10 @@
 
 #include <QObject>
 
+#include "controllers/videocontroller.h"
 #include "demuxer.h"
 #include "decoder.h"
 #include "mediaworker.h"
-#include "videomanager.h"
 
 #include "defs.h"
 
@@ -33,20 +33,23 @@ class MediaPlayer : public QObject
     Q_PROPERTY(double duration READ duration WRITE setDuration NOTIFY durationChanged FINAL)
     Q_PROPERTY(Playback::PlaybackState playbackState READ playbackState WRITE setPlaybackState NOTIFY playbackStateChanged FINAL)
     Q_PROPERTY(double position READ position WRITE setPosition NOTIFY positionChanged FINAL)
+    Q_PROPERTY(QString source READ source WRITE setSource NOTIFY sourceChanged FINAL)
 
 public:
-    explicit MediaPlayer(QSharedPointer<VideoManager> videoManager,
+    explicit MediaPlayer(QSharedPointer<VideoController> videoController,
                          QObject *parent = nullptr);
     ~MediaPlayer();
 
-    bool open(const QString& file);
+    void open(const QString& file);
     void play();
     void stop();
     void pause_resume();
     void seek(double timestamp);
 
-    QString source();
     long framesCount() const;
+
+    QString source();
+    void setSource(const QString &newSource);
 
     bool muted() const;
     void setMuted(bool newMuted);
@@ -71,13 +74,15 @@ signals:
     void mediaChanged();
     void playbackStateChanged();
 
+    void sourceChanged();
+
     void mutedChanged(bool muted);
     void volumeChanged();
     void durationChanged();
     void positionChanged();
 
 private:
-    QSharedPointer<VideoManager> m_videoManager;
+    QSharedPointer<VideoController> m_videoController;
     QSharedPointer<Demuxer> m_demuxer;
     VideoState *videoState = nullptr;
     Decoder m_videoDecoder;
@@ -98,6 +103,7 @@ private:
     double m_duration;
     Playback::PlaybackState m_playbackState = Playback::Stopped;
     double m_position;
+    QString m_source;
 };
 
 #endif // MEDIAPLAYER_H

@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Layouts
 import QtMultimedia
 
+import com.qt.openmedia 1.0
+
 import "../components"
 
 Rectangle {
@@ -15,7 +17,7 @@ Rectangle {
     border.width: 0.5
     radius: 7
 
-    property bool isCurrentlyPlaying: MediaPlayerController.source().toString().toLowerCase() === path.toLowerCase()
+    property bool isCurrentlyPlaying: MediaPlayerController.source === path
     property bool isMusicFile: path.endsWith(".mp3")
 
     function setCurrentIndex() {
@@ -59,9 +61,9 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
 
         iconSource: {
-            if (isMusicFile && (!isCurrentlyPlaying || videoState !== MediaPlayer.PlayingState)) {
+            if (isMusicFile && (!isCurrentlyPlaying || videoState !== Playback.Playing)) {
                 return "qrc:/ui/icons/svg/music_media.svg"
-            } else if (isCurrentlyPlaying && videoState === MediaPlayer.PlayingState) {
+            } else if (isCurrentlyPlaying && videoState === Playback.Playing) {
                 return "qrc:/ui/icons/svg/pause.svg"
             } else {
                 return "qrc:/ui/icons/svg/play.svg"
@@ -79,7 +81,7 @@ Rectangle {
                     "Play this music"
                 } else if (path.endsWith(".mp3") && videoState === Playback.Playing && isCurrentlyPlaying) {
                     "Stop this music"
-                } else if (videoState === MediaPlayer.PlayingState && isCurrentlyPlaying) {
+                } else if (videoState === Playback.Playing && isCurrentlyPlaying) {
                     "Stop this video"
                 } else {
                     "Play this video"
@@ -94,7 +96,7 @@ Rectangle {
             onClicked: {
                 setCurrentIndex();
 
-                if (isCurrentlyPlaying && MediaPlayerController.playbackState() === Playback.Playing) {
+                if (isCurrentlyPlaying && MediaPlayerController.playbackState === Playback.Playing) {
                     MediaPlayerController.stop()
                 } else {
                     MediaPlayerController.open(path)

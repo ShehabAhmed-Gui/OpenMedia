@@ -17,6 +17,8 @@ struct VideoState {
     QLinkedList<AVPacket *> videoq;
     QLinkedList<AVPacket *> audioq;
 
+    double position = 0.0;
+
     // We set it to true when we want to pause
     bool paused = false;
 

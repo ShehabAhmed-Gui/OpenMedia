@@ -61,7 +61,7 @@ set(BACKEND_HEADERS
 
 
     client/core/backend/decoder.h
-    client/core/backend/videodecoder.h
+
 )
 
 set(BACKEND_SOURCES
@@ -70,7 +70,7 @@ set(BACKEND_SOURCES
 
 
     client/core/backend/decoder.cpp
-    client/core/backend/videodecoder.cpp
+
 )
 
 qt_standard_project_setup()

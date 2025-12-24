@@ -64,7 +64,6 @@ void Decoder::decode_video_frame(VideoState *state, QImage &pic, AVPacket *pkt)
             return;
         }
 
-        state->frame_timer = QDateTime::currentSecsSinceEpoch();
         state->pts = avframe->pts;
 
         pic = FrameConverter::rawtoQImage(avframe);

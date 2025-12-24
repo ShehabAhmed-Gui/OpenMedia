@@ -29,6 +29,8 @@ public:
     int getVideoStreamIndex();
     int getAudioStreamIndex();
 
+    void seek(VideoState *state, double target);
+
     QString typeToString(AVCodecParameters* codepar) {
         switch (codepar->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
