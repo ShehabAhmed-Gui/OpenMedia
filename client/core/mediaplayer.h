@@ -5,8 +5,8 @@
 
 #include "controllers/videocontroller.h"
 #include "demuxer.h"
-#include "decoder.h"
-#include "mediaworker.h"
+#include "videodecoder.h"
+#include "audiodecoder.h"
 
 #include "defs.h"
 
@@ -83,10 +83,7 @@ signals:
 
 private:
     QSharedPointer<VideoController> m_videoController;
-    QSharedPointer<Demuxer> m_demuxer;
     VideoState *videoState = nullptr;
-    Decoder m_videoDecoder;
-    Decoder m_audioDecoder;
 
     AVFormatContext *m_fmtCtx = nullptr;
     AVCodecContext *m_ctx;
@@ -95,8 +92,13 @@ private:
     int videoStreamIndex = -1;
     bool m_playing = false;
 
-    QThread *workerThread;
-    MediaWorker *mediaWorker;
+    QThread *videoThread;
+    QThread *audioThread;
+    QThread *demuxerThread;
+
+    VideoDecoder *videoDecoder;
+    AudioDecoder *audioDecoder;
+    Demuxer *demuxer;
 
     bool m_muted;
     double m_volume;

@@ -2,6 +2,7 @@
 #define DEFS_H
 
 #include <QDateTime>
+#include <qelapsedtimer.h>
 #include <qimage.h>
 #include <qobject.h>
 
@@ -12,12 +13,32 @@ extern "C" {
 #include <libavformat/avformat.h>
 }
 
+// We use Monotonic clock to keep video synced
+struct Clock {
+    QElapsedTimer clock;
+    int pausedStartMs = 0;
+    int pausedAccumulatedMs = 0;
+    int alignment_offset = 0;
+
+    void start() {
+        clock.start();
+    }
+
+    quint64 now() {
+        return clock.elapsed();
+    }
+};
+
 struct VideoState {
     QString fileName;
     QLinkedList<AVPacket *> videoq;
     QLinkedList<AVPacket *> audioq;
 
     double position = 0.0;
+
+    int bytes_per_sample = 0;
+    int64_t samples_played = 0;
+    int sample_rate = 0;
 
     // We set it to true when we want to pause
     bool paused = false;
@@ -28,11 +49,8 @@ struct VideoState {
     AVStream *audio_st = nullptr;
     AVFormatContext *fc = nullptr;
 
-    double audio_clock = 0.0;
-    double video_clock;
+    Clock clock;
     double pts = -1;
-    double frame_timer;
-    double frame_last_delay = 40e-3;
 };
 
 struct AudioData {

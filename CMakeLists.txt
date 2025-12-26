@@ -103,11 +103,13 @@ qt_add_executable(OpenMedia
     client/core/videoitem.h client/core/videoitem.cpp
 
 
-    client/core/mediaworker.h client/core/mediaworker.cpp
+
     client/core/audiobufferdevice.h
     client/core/defs.h
 
     client/core/backend/frameconverter.h client/core/backend/frameconverter.cpp
+    client/core/backend/videodecoder.h client/core/backend/videodecoder.cpp
+    client/core/backend/audiodecoder.h client/core/backend/audiodecoder.cpp
 )
 
 set_target_properties(OpenMedia PROPERTIES

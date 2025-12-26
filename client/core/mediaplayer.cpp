@@ -5,33 +5,53 @@ MediaPlayer::MediaPlayer(QSharedPointer<VideoController> videoController,
     : QObject{parent}
     , m_videoController(videoController)
 {
-    m_demuxer.reset(new Demuxer());
-    m_audioPlayer.reset(new AudioPlayer(this));
-
+    videoState = new VideoState;
+    m_audioPlayer.reset(new AudioPlayer(videoState, this));
     connect(m_audioPlayer.get(), &AudioPlayer::muteChanged, this, &MediaPlayer::mutedChanged);
 
-    workerThread = new QThread(this);
-    mediaWorker = new MediaWorker(videoController, m_demuxer);
+    demuxerThread = new QThread(this);
+    videoThread = new QThread(this);
+    audioThread = new QThread(this);
 
-    mediaWorker->moveToThread(workerThread);
-    connect(mediaWorker, &MediaWorker::audioFrameReady, this, &MediaPlayer::onAudioFrameReady);
-    connect(mediaWorker, &MediaWorker::videoFrameReady, this, &MediaPlayer::onVideoFrameReady);
-    connect(workerThread, &QThread::finished, mediaWorker, &QObject::deleteLater);
-    workerThread->start();
+    demuxer = new Demuxer;
+    videoDecoder = new VideoDecoder;
+    audioDecoder = new AudioDecoder;
+
+    demuxer->moveToThread(demuxerThread);
+    videoDecoder->moveToThread(videoThread);
+    audioDecoder->moveToThread(audioThread);
+
+    connect(demuxerThread, &QThread::finished, demuxer, &QObject::deleteLater);
+    connect(videoThread, &QThread::finished, videoDecoder, &QObject::deleteLater);
+    connect(audioThread, &QThread::finished, audioDecoder, &QObject::deleteLater);
+    connect(videoDecoder, &VideoDecoder::videoFrameReady, this, &MediaPlayer::onVideoFrameReady);
+    connect(audioDecoder, &AudioDecoder::audioFrameReady, this, &MediaPlayer::onAudioFrameReady);
+
+    demuxerThread->start();
+    videoThread->start();
+    audioThread->start();
 }
 
 MediaPlayer::~MediaPlayer()
 {
-    mediaWorker->stop();
-    workerThread->quit();
-    workerThread->wait();
+    videoDecoder->stop();
+    videoThread->quit();
+    videoThread->wait();
+
+    demuxerThread->quit();
+    demuxerThread->wait();
+
+    audioDecoder->stop();
+    audioThread->quit();
+    audioThread->wait();
 }
 
 void MediaPlayer::open(const QString &file)
 {
-    videoState = new VideoState;
-    m_demuxer->open(videoState, file);
-    QMetaObject::invokeMethod(mediaWorker, "open", videoState);
+    demuxer->open(videoState, file);
+
+    videoDecoder->open(videoState->video_st->codecpar);
+    audioDecoder->open(videoState->audio_st->codecpar);
 
     emit durationChanged();
     emit sourceChanged();
@@ -49,7 +69,23 @@ void MediaPlayer::play()
 
     m_playbackState = Playback::Playing;
     emit playbackStateChanged();
-    QMetaObject::invokeMethod(mediaWorker, "start", videoState);
+
+    QMetaObject::invokeMethod(
+        demuxer,
+        "start",
+        videoState);
+
+    QMetaObject::invokeMethod(
+        audioDecoder,
+        "start",
+        videoState
+        );
+
+    QMetaObject::invokeMethod(
+        videoDecoder,
+        "start",
+        videoState
+        );
 }
 
 void MediaPlayer::stop()
@@ -57,7 +93,12 @@ void MediaPlayer::stop()
     m_playbackState = Playback::Stopped;
     emit playbackStateChanged();
     m_audioPlayer->stop();
-    mediaWorker->stop();
+
+    videoDecoder->stop();
+    audioDecoder->stop();
+    demuxer->stop();
+
+    videoState = new VideoState;
 }
 
 void MediaPlayer::pause_resume()
@@ -69,7 +110,15 @@ void MediaPlayer::pause_resume()
     }
     emit playbackStateChanged();
     m_audioPlayer->pause_resume();
-    mediaWorker->pause_resume(videoState);
+
+    if (!videoState->paused) {
+        videoState->paused = true;
+        videoState->clock.pausedStartMs = videoState->clock.clock.elapsed();
+    } else {
+        videoState->paused = false;
+        videoState->clock.pausedAccumulatedMs +=
+            videoState->clock.now() - videoState->clock.pausedStartMs;
+    }
 }
 
 void MediaPlayer::seek(double timestamp)
