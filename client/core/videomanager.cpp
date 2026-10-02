@@ -1,12 +1,14 @@
 #include "videomanager.h"
+#include <qthread.h>
+
+#include "frameconverter.h"
 
 VideoManager::VideoManager(QSharedPointer<Settings> settings,
                            QObject *parent)
     : QObject{parent}
     , m_settings(settings)
 {
-    Loop savedState = static_cast<Loop>(m_settings->getSetting("Video", "loop").toInt());
-    setLoopState(savedState);
+    m_loop = m_settings->getSetting("Video", "loop").toBool();
     m_thumbnailsExtractor = new ThumbnailsExtractor(this);
 
     connect(m_thumbnailsExtractor, &ThumbnailsExtractor::extractingInProgress, this, &VideoManager::extractingInProgress);
@@ -22,26 +24,25 @@ void VideoManager::openMediaFile(QString path)
     emit playMediaFile(path);
 }
 
-VideoManager::Loop VideoManager::loopState() const
+bool VideoManager::loop() const
 {
-    return m_loopState;
+    return m_loop;
 }
 
-void VideoManager::setLoopState(Loop newLoopState)
+void VideoManager::setLoop(bool newLoop)
 {
-    if (m_loopState == newLoopState)
+    if (m_loop == newLoop)
         return;
 
-    m_loopState = newLoopState;
-    emit loopStateChanged();
+    m_loop = newLoop;
+    emit loopChanged();
 
-    // Update loop state in Settings
-    m_settings->saveSetting("Video", "loop", static_cast<int>(newLoopState));
+    m_settings->saveSetting("Video", "loop", newLoop);
 }
 
-QImage VideoManager::getVideoFrame(qint64 timestamp)
+QImage VideoManager::getThumbnailAtTimestamp(qint64 timestamp)
 {
-    return m_thumbnailsExtractor->getVideoFrame(timestamp);
+    return m_thumbnailsExtractor->getThumbnailAtTimestamp(timestamp);
 }
 
 void VideoManager::extractVideoThumbnails(const QString &path)

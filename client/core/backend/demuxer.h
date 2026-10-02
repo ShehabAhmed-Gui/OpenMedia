@@ -2,58 +2,53 @@
 #define DEMUXER_H
 
 #include <QDebug>
-#include <QImage>
+#include <QObject>
+#include <QSharedPointer>
+
+#include <atomic>
 
 #include "../defs.h"
 
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
-#include <libswscale/swscale.h>
 }
 
-class Demuxer
+class Demuxer : public QObject
 {
+    Q_OBJECT
 public:
-    Demuxer();
+    explicit Demuxer(QObject *parent = nullptr);
+    ~Demuxer();
 
-    typedef enum DemuxerErrorType
-    {
-        NoError,
-        ReadPacketError,
-        MediaEOF
-    } ErrorType;
+    // Thread safe: the read loop keeps the demuxer thread busy, so stopping
+    // cannot go through the event loop.
+    void stop();
+    // Clears a pending stop before a new file is opened. Only call it while
+    // the demuxer thread is idle.
+    void prepare();
 
-    ErrorType readPacket(VideoState *state);
-    void open(VideoState *state, const QString &file);
-    int getVideoStreamIndex();
-    int getAudioStreamIndex();
+public slots:
+    // Opens the file, publishes the streams and then runs the read loop until
+    // end of file or stop().
+    void open(QSharedPointer<VideoState> videoState, const QString file);
 
-    void seek(VideoState *state, double target);
-
-    QString typeToString(AVCodecParameters* codepar) {
-        switch (codepar->codec_type) {
-        case AVMEDIA_TYPE_VIDEO:
-            return "Video";
-            break;
-        case AVMEDIA_TYPE_AUDIO:
-            return "Audio";
-            break;
-        case AVMEDIA_TYPE_SUBTITLE:
-            return "Subtitle";
-            break;
-        default:
-            break;
-        }
-
-        return "Unknown";
-    }
+signals:
+    void finished();
+    void failed(const QString &reason);
+    void streamsReady(QSharedPointer<VideoState> videoState);
 
 private:
-    bool checkStreamType(AVCodecParameters* codecpar);
-    AVFormatContext *fc = nullptr;
+    void run();
+    bool applySeek();
+    void selectStreams();
+    void close();
 
-    int st_index[AVMEDIA_TYPE_NB];
+    QSharedPointer<VideoState> m_videoState;
+    AVFormatContext *m_fmtCtx = nullptr;
+    std::atomic_bool m_running{ false };
+    std::atomic_bool m_stopRequested{ false };
+    bool m_eofReached = false;
 };
 
 #endif // DEMUXER_H

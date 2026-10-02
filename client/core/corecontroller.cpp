@@ -24,8 +24,8 @@ CoreController::CoreController(QQmlApplicationEngine *engine,
     initModels();
     initControllers();
 
-    m_frameProvider.reset(new FrameProvider(m_videoManager));
-    m_engine->addImageProvider("framesprovider", m_frameProvider.get());
+    m_frameProvider = new FrameProvider(m_videoManager);
+    m_engine->addImageProvider("framesprovider", m_frameProvider);
 }
 
 void CoreController::loadFonts()
@@ -69,8 +69,13 @@ void CoreController::initControllers()
     m_videoController.reset(new VideoController(m_videoManager, this));
     m_engine->rootContext()->setContextProperty("VideoController", m_videoController.get());
 
-    m_mediaPlayer.reset(new MediaPlayer(m_videoController, this));
+    m_mediaPlayer.reset(new MediaPlayer(m_videoManager, this));
     m_mediaPlayerController.reset(new MediaPlayerController(m_mediaPlayer, this));
+
+    m_mediaPlayer->setLoop(m_videoController->loop());
+    connect(m_videoController.get(), &VideoController::loopChanged, m_mediaPlayer.get(), [this] {
+        m_mediaPlayer->setLoop(m_videoController->loop());
+    });
 
     // Register Playback namespace to QML
     qmlRegisterUncreatableType<Playback>(

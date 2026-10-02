@@ -1,35 +1,37 @@
 #ifndef VIDEODECODER_H
 #define VIDEODECODER_H
 
-#include <QObject>
-#include <QThread>
 #include "decoder.h"
-#include "demuxer.h"
+#include "frameconverter.h"
 
 class VideoDecoder : public Decoder
 {
     Q_OBJECT
 public:
-    VideoDecoder();
-
-public:
-    void stop();
-
-    void decode_video_frame(VideoState *state, QImage &image, AVPacket *pkt) override;
+    explicit VideoDecoder(QObject *parent = nullptr);
 
 public slots:
-    void start(VideoState *state);
+    void open(QSharedPointer<VideoState> videoState);
 
 signals:
-    void videoFrameReady(const QImage &image);
+    // Ownership of the frame moves to the receiver.
+    void videoFrameReady(AVFrame *frame);
 
-public:
-    void decode_audio_frame(VideoState *state, QByteArray &buffer, AVPacket *pkt) override {
-        qCritical() << "This function shouldn't be called from VideoDecoder!";
-    }
+protected:
+    void processFrame(AVFrame *frame) override;
+    void onFlush() override;
 
 private:
-    bool m_running = false;
+    double framePts(const AVFrame *frame) const;
+    // Holds the frame back until the master clock reaches its presentation
+    // time. Returns false when the frame became obsolete meanwhile.
+    bool waitForPts(double pts);
+
+    FrameConverter m_converter;
+    AVRational m_timeBase{ 0, 1 };
+    double m_lastPts = NAN;
+    double m_frameDuration = 0.04;
+    int m_droppedInRow = 0;
 };
 
 #endif // VIDEODECODER_H

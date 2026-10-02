@@ -12,6 +12,7 @@ class PlaylistModel : public QAbstractListModel
     Q_OBJECT
 
     Q_PROPERTY(qsizetype currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged FINAL)
+    Q_PROPERTY(int count READ count NOTIFY countChanged FINAL)
 
 public:
     PlaylistModel(const QSharedPointer<SettingsController> settingsController,
@@ -39,7 +40,11 @@ public:
     Q_INVOKABLE void clearPlaylist();
     Q_INVOKABLE QString getPrevious();
     Q_INVOKABLE QString getNext();
+    // Keeps next/previous relative to whatever is actually playing, however
+    // playback was started.
+    Q_INVOKABLE void setCurrentPath(const QString &path);
 
+    int count() const;
     qsizetype currentIndex() const;
     void setCurrentIndex(qsizetype newCurrentIndex);
 
@@ -48,6 +53,7 @@ public slots:
 
 signals:
     void currentIndexChanged();
+    void countChanged();
 
 private:
     QVector<QString> m_data;

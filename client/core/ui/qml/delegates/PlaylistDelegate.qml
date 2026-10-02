@@ -1,148 +1,146 @@
 import QtQuick
-import QtQuick.Layouts
-import QtMultimedia
 
 import com.qt.openmedia 1.0
 
 import "../components"
+import "../theme"
 
 Rectangle {
     id: root
-    color: "#2C3930"
-    anchors.horizontalCenter: parent? parent.horizontalCenter : undefined
 
-    width: parent? parent.width - 20 : 20
-    height: 45
-    border.color: isCurrentlyPlaying? "white" : "transparent"
-    border.width: 0.5
-    radius: 7
+    width: ListView.view ? ListView.view.width : 0
+    height: 52
+    radius: Theme.radiusControl
 
     property bool isCurrentlyPlaying: MediaPlayerController.source === path
     property bool isMusicFile: path.endsWith(".mp3")
+    property bool isPlayingNow: isCurrentlyPlaying && videoState === Playback.Playing
 
-    function setCurrentIndex() {
-        listView.currentIndex = index
-        PlaylistModel.currentIndex = index
+    color: hoverHandler.hovered ? Theme.raised
+                                : isCurrentlyPlaying ? Qt.rgba(1, 1, 1, 0.04)
+                                                     : "transparent"
+
+    Behavior on color {
+        ColorAnimation { duration: Theme.durFast }
     }
 
-    Component.onCompleted: {
-        // Schedule the code for the next available event loop iteration
-        Qt.callLater(() => {
-            if (isCurrentlyPlaying) {
-                if (listView) {
-                    setCurrentIndex();
-                }
-            }
-        });
+    HoverHandler {
+        id: hoverHandler
+        onHoveredChanged: hovered ? afkTimer.stop() : afkTimer.start()
     }
 
-    Connections {
-        target: listView
-        function onPlayNext() {
-            if (isCurrentlyPlaying) {
-                setCurrentIndex();
-            }
+    TapHandler {
+        // Exclusive grab: a passive one lets the click through to the video.
+        gesturePolicy: TapHandler.ReleaseWithinBounds
+
+        onTapped: {
+            PlaylistModel.currentIndex = index
+
+            if (isCurrentlyPlaying && MediaPlayerController.playbackState !== Playback.Stopped)
+                MediaPlayerController.pause_resume()
+            else
+                MediaPlayerController.start(path)
         }
     }
 
-    Connections {
-        target: listView
-        function onPlayPrevious() {
-            if (isCurrentlyPlaying) {
-                setCurrentIndex();
-            }
-        }
-    }
-
-    CustomButton {
-        id: playVideo
+    // Leading accent bar marks the active row.
+    Rectangle {
         anchors.left: parent.left
-        anchors.leftMargin: 5
         anchors.verticalCenter: parent.verticalCenter
+        width: 3
+        height: isCurrentlyPlaying ? parent.height - Theme.md : 0
+        radius: 2
+        color: Theme.accent
 
-        iconSource: {
-            if (isMusicFile && (!isCurrentlyPlaying || videoState !== Playback.Playing)) {
-                return "qrc:/ui/icons/svg/music_media.svg"
-            } else if (isCurrentlyPlaying && videoState === Playback.Playing) {
-                return "qrc:/ui/icons/svg/pause.svg"
-            } else {
-                return "qrc:/ui/icons/svg/play.svg"
-            }
-        }
-
-        iconWidth: isCurrentlyPlaying && videoState === Playback.Playing? 22 : 24
-        iconHeight: isCurrentlyPlaying && videoState === Playback.Playing? 22 : 24
-        width: 24
-        height: 24
-
-        ToolTipType {
-            toolTipText: {
-                if (isMusicFile && (!isCurrentlyPlaying || videoState !== Playback.Playing)) {
-                    "Play this music"
-                } else if (path.endsWith(".mp3") && videoState === Playback.Playing && isCurrentlyPlaying) {
-                    "Stop this music"
-                } else if (videoState === Playback.Playing && isCurrentlyPlaying) {
-                    "Stop this video"
-                } else {
-                    "Play this video"
-                }
-            }
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
-
-            onClicked: {
-                setCurrentIndex();
-
-                if (isCurrentlyPlaying && MediaPlayerController.playbackState === Playback.Playing) {
-                    MediaPlayerController.stop()
-                } else {
-                    MediaPlayerController.open(path)
-                    MediaPlayerController.play()
-                }
-            }
+        Behavior on height {
+            NumberAnimation { duration: Theme.durBase; easing.type: Theme.easeOut }
         }
     }
 
-    Flickable {
-        width: parent.width
-        height: videoName.font.pixelSize + 5
+    Item {
+        id: leading
+        anchors.left: parent.left
+        anchors.leftMargin: Theme.md
+        anchors.verticalCenter: parent.verticalCenter
+        width: 20
+        height: 20
 
-        contentWidth: videoName.contentWidth
-        contentHeight: height
+        // Three bars bouncing: the only place the shell shows it is running.
+        Row {
+            anchors.centerIn: parent
+            spacing: 2.5
+            visible: isPlayingNow
 
-        contentY: 0
-        contentX: 0
+            Repeater {
+                model: 3
 
-        anchors {
-            verticalCenter: parent.verticalCenter
-            horizontalCenter: parent.horizontalCenter
-            left: playVideo.right
-            leftMargin: 7
+                Rectangle {
+                    width: 2.5
+                    radius: 1.25
+                    color: Theme.accent
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: 5
+
+                    SequentialAnimation on height {
+                        running: isPlayingNow
+                        loops: Animation.Infinite
+
+                        PauseAnimation { duration: index * 130 }
+                        NumberAnimation { to: 15; duration: 380; easing.type: Easing.InOutSine }
+                        NumberAnimation { to: 5;  duration: 380; easing.type: Easing.InOutSine }
+                    }
+                }
+            }
         }
 
+        AppIcon {
+            anchors.centerIn: parent
+            visible: !isPlayingNow
+            size: 16
+            source: isMusicFile ? "qrc:/ui/icons/svg/music_media.svg"
+                                : "qrc:/ui/icons/svg/play.svg"
+            color: hoverHandler.hovered ? Theme.text : Theme.textFaint
+        }
+    }
+
+    Item {
+        id: nameClip
+        anchors.left: leading.right
+        anchors.leftMargin: Theme.md
+        anchors.right: deleteItem.left
+        anchors.rightMargin: Theme.sm
+        anchors.verticalCenter: parent.verticalCenter
+        height: label.height
         clip: true
 
         Text {
-            id: videoName
+            id: label
             text: name
-            color: "#FFFFFF"
+            color: isCurrentlyPlaying ? Theme.accent : Theme.text
+            width: Math.max(implicitWidth, nameClip.width)
 
-            width: videoName.contentWidth
-            height: parent.height
+            font.family: Theme.fontFamily
+            font.pixelSize: Theme.bodySize
+            font.weight: isCurrentlyPlaying ? Font.DemiBold : Font.Medium
+            elide: hoverHandler.hovered ? Text.ElideNone : Text.ElideRight
+            wrapMode: Text.NoWrap
 
-            anchors {
-                left: parent.left
-                verticalCenter: parent.verticalCenter
+            // Only long names scroll, and only while pointed at.
+            SequentialAnimation on x {
+                running: hoverHandler.hovered && label.implicitWidth > nameClip.width
+                loops: Animation.Infinite
+
+                PauseAnimation { duration: 700 }
+                NumberAnimation {
+                    to: nameClip.width - label.implicitWidth
+                    duration: Math.max(1200, (label.implicitWidth - nameClip.width) * 22)
+                    easing.type: Easing.InOutQuad
+                }
+                PauseAnimation { duration: 900 }
+                NumberAnimation { to: 0; duration: 320; easing.type: Theme.easeOut }
             }
 
-            font.family: "Poppins"
-            font.pixelSize: 13
-            font.weight: Font.Medium
-
-            wrapMode: Text.NoWrap
+            onXChanged: if (!hoverHandler.hovered) x = 0
         }
     }
 
@@ -150,19 +148,24 @@ Rectangle {
         id: deleteItem
         anchors.verticalCenter: parent.verticalCenter
         anchors.right: parent.right
-        anchors.rightMargin: 10
+        anchors.rightMargin: Theme.sm
 
         iconSource: "qrc:/ui/icons/svg/trash.svg"
+        iconWidth: 14
+        iconHeight: 14
+        buttonWidth: 28
+        buttonHeight: 28
+        iconHoverColor: Theme.danger
 
-        ToolTipType {
-            toolTipText: "Remove video"
+        opacity: hoverHandler.hovered ? 1 : 0
+        enabled: hoverHandler.hovered
+
+        Behavior on opacity {
+            NumberAnimation { duration: Theme.durFast }
         }
 
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
+        ToolTipType { toolTipText: qsTr("Remove") }
 
-            onClicked: PlaylistModel.deleteItem(index);
-        }
+        onClicked: PlaylistModel.deleteItem(index)
     }
 }

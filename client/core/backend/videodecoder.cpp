@@ -1,92 +1,131 @@
 #include "videodecoder.h"
-#include <QTimer>
 
-VideoDecoder::VideoDecoder()
+#include <QThread>
+
+// A seek skips ahead to the target, which can take a whole GOP.
+static constexpr int MaxSeekDrops = 240;
+
+VideoDecoder::VideoDecoder(QObject *parent)
+    : Decoder(parent)
 {
 }
 
-void VideoDecoder::start(VideoState *state)
+void VideoDecoder::open(QSharedPointer<VideoState> videoState)
 {
-    state->clock.start();
-    m_running = true;
-    int ret = 0;
+    m_videoState = videoState;
+    m_lastPts = NAN;
+    m_droppedInRow = 0;
 
-    while(m_running) {
-        while (state->paused && m_running) {
-            QThread::msleep(10);
-        }
-
-        // Start decoding video frames
-        if (!state->videoq.isEmpty()) {
-            AVPacket *vp = state->videoq.takeFirst();
-            if (vp) {
-                QImage frame;
-                decode_video_frame(state, frame, vp);
-
-                emit videoFrameReady(frame);
-            }
-        }
-    }
-
-    flush();
-    flushBuffers();
-}
-
-void VideoDecoder::stop()
-{
-    m_running = false;
-}
-
-void VideoDecoder::decode_video_frame(VideoState *state, QImage &image, AVPacket *pkt)
-{
-    if (!pkt)
-        return;
-
-    int ret = avcodec_send_packet(m_ctx, pkt);
-    if (ret < 0) {
-        PlaybackLogger::printStringError(ret, "avcodec_send_packet failed:");
+    if (!videoState->video_st || !openCodec(videoState->video_st, 0)) {
+        emit finished();
         return;
     }
 
-    while (true) {
-        ret = avcodec_receive_frame(m_ctx, avframe);
+    m_timeBase = videoState->video_st->time_base;
 
-        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-            break;
-        }
+    const AVRational fps = videoState->video_st->avg_frame_rate;
+    m_frameDuration = (fps.num > 0 && fps.den > 0) ? av_q2d(AVRational{ fps.den, fps.num }) : 0.04;
 
-        if (ret < 0) {
-            PlaybackLogger::printStringError(ret, "avcodec_receive_frame failed:");
+    run(videoState->videoq);
+}
+
+void VideoDecoder::processFrame(AVFrame *frame)
+{
+    VideoState *state = m_videoState.get();
+    const double pts = framePts(frame);
+
+    // A seek lands on the preceding keyframe: decode up to the target without
+    // showing anything.
+    if (pts + m_frameDuration <= state->skipUntil.load()) {
+        m_lastPts = pts;
+        return;
+    }
+
+    // Anchor the fallback clock on the first frame of the sequence: it keeps
+    // video paced while the audio clock has no reference yet.
+    if (!state->externalClock.isValid())
+        state->externalClock.set(pts);
+
+    const double master = state->masterClock();
+    const double diff = pts - master;
+    const int maxDrops = state->refreshFrame.load() ? MaxSeekDrops : Sync::MaxConsecutiveDrops;
+
+    // Late frame: skip presenting it so playback catches up with the audio.
+    if (!std::isnan(master) && diff < -Sync::DropThreshold && m_droppedInRow < maxDrops) {
+        ++m_droppedInRow;
+        m_lastPts = pts;
+        return;
+    }
+    m_droppedInRow = 0;
+
+    if (!waitForPts(pts))
+        return;
+
+    AVFrame *out = av_frame_alloc();
+    if (!out)
+        return;
+
+    if (FrameConverter::needsConversion(frame)) {
+        if (!m_converter.toYUV420P(frame, out)) {
+            av_frame_free(&out);
             return;
         }
-
-        state->pts = avframe->pts;
-
-        qint64 pts_ms = av_rescale_q(
-            state->pts,
-            state->video_st->time_base,
-            AVRational{1, 1000}
-            );
-
-        if (state->clock.alignment_offset == 0) {
-            state->clock.alignment_offset =
-                state->clock.clock.elapsed()
-                - state->clock.pausedAccumulatedMs
-                - pts_ms;
-        }
-
-        qint64 now_ms =
-            state->clock.clock.elapsed()
-            - state->clock.pausedAccumulatedMs
-            - state->clock.alignment_offset;
-
-        qint64 delay = pts_ms - now_ms;
-
-        if (delay > 0) {
-            QThread::msleep(double(delay));
-        }
-
-        state->position = pkt->pts;
-        image = FrameConverter::rawtoQImage(avframe);
+    } else {
+        av_frame_move_ref(out, frame);
     }
+
+    m_lastPts = pts;
+    state->refreshFrame.store(false);
+    state->videoPrimed.store(true);
+
+    emit videoFrameReady(out);
+}
+
+bool VideoDecoder::waitForPts(double pts)
+{
+    VideoState *state = m_videoState.get();
+
+    while (m_running) {
+        // A seek happened: this frame belongs to the previous sequence.
+        if (state->videoq.serial() != serial())
+            return false;
+
+        if (state->paused.load()) {
+            // Still show the frame the user seeked to while paused.
+            if (state->refreshFrame.load())
+                return true;
+            QThread::msleep(10);
+            continue;
+        }
+
+        const double master = state->masterClock();
+        if (std::isnan(master))
+            return true;
+
+        const double diff = pts - master;
+        if (diff <= Sync::DisplayTolerance || diff > Sync::NoSyncThreshold)
+            return true;
+
+        QThread::msleep(static_cast<unsigned long>(qBound(1.0, diff * 1000.0, 10.0)));
+    }
+
+    return false;
+}
+
+double VideoDecoder::framePts(const AVFrame *frame) const
+{
+    int64_t ts = frame->best_effort_timestamp;
+    if (ts == AV_NOPTS_VALUE)
+        ts = frame->pts;
+
+    if (ts == AV_NOPTS_VALUE)
+        return std::isnan(m_lastPts) ? 0.0 : m_lastPts + m_frameDuration;
+
+    return ts * av_q2d(m_timeBase);
+}
+
+void VideoDecoder::onFlush()
+{
+    m_lastPts = NAN;
+    m_droppedInRow = 0;
 }

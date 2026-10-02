@@ -25,8 +25,7 @@
 #include "controllers/videocontroller.h"
 #include "controllers/mediaplayercontroller.h"
 
-// QML elements
-#include "videoitem.h"
+#include "videorenderer.h"
 
 class CoreController : public QObject
 {
@@ -47,7 +46,6 @@ private:
 
     QSharedPointer<PlaylistModel> m_listModel;
     QSharedPointer<MetaDataModel> m_metaDataModel;
-
     QSharedPointer<MetaDataFilterProxyModel> m_metaDataProxyModel;
 
     QSharedPointer<FilesManager> m_filesManager;
@@ -59,13 +57,12 @@ private:
     QSharedPointer<MediaPlayer> m_mediaPlayer;
     QSharedPointer<MediaPlayerController> m_mediaPlayerController;
 
-    QSharedPointer<FrameProvider> m_frameProvider;
+    // Owned by the QML engine, which takes ownership of image providers.
+    FrameProvider *m_frameProvider = nullptr;
     QSharedPointer<FolderMonitor> m_folderMonitor;
 
     QSharedPointer<VideoManager> m_videoManager;
     QSharedPointer<VideoController> m_videoController;
-
-    QSharedPointer<VideoItem> m_videoItem;
 
     void initModels();
     void initControllers();

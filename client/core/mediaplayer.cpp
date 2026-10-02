@@ -1,13 +1,18 @@
 #include "mediaplayer.h"
 
-MediaPlayer::MediaPlayer(QSharedPointer<VideoController> videoController,
-                         QObject *parent)
-    : QObject{parent}
-    , m_videoController(videoController)
+#include "artworkframe.h"
+
+#include <QtMath>
+
+MediaPlayer::MediaPlayer(QSharedPointer<VideoManager> videoManager, QObject *parent)
+    : QObject{ parent }
+    , m_videoManager(videoManager)
 {
-    videoState = new VideoState;
-    m_audioPlayer.reset(new AudioPlayer(videoState, this));
+    videoState.reset(new VideoState);
+    m_audioPlayer.reset(new AudioPlayer(videoState));
+
     connect(m_audioPlayer.get(), &AudioPlayer::muteChanged, this, &MediaPlayer::mutedChanged);
+    connect(m_audioPlayer.get(), &AudioPlayer::volumeChanged, this, &MediaPlayer::volumeChanged);
 
     demuxerThread = new QThread(this);
     videoThread = new QThread(this);
@@ -21,11 +26,23 @@ MediaPlayer::MediaPlayer(QSharedPointer<VideoController> videoController,
     videoDecoder->moveToThread(videoThread);
     audioDecoder->moveToThread(audioThread);
 
+    m_thumbnailExtractor.reset(new ThumbnailsExtractor(this));
+
     connect(demuxerThread, &QThread::finished, demuxer, &QObject::deleteLater);
     connect(videoThread, &QThread::finished, videoDecoder, &QObject::deleteLater);
     connect(audioThread, &QThread::finished, audioDecoder, &QObject::deleteLater);
+
+    connect(demuxer, &Demuxer::streamsReady, this, &MediaPlayer::onStreamsReady);
+    connect(demuxer, &Demuxer::finished, this, &MediaPlayer::onDemuxerFinished);
+    connect(videoDecoder, &Decoder::finished, this, &MediaPlayer::onDecoderFinished);
+    connect(audioDecoder, &Decoder::finished, this, &MediaPlayer::onDecoderFinished);
     connect(videoDecoder, &VideoDecoder::videoFrameReady, this, &MediaPlayer::onVideoFrameReady);
-    connect(audioDecoder, &AudioDecoder::audioFrameReady, this, &MediaPlayer::onAudioFrameReady);
+
+    m_positionTimer.setInterval(100);
+    connect(&m_positionTimer, &QTimer::timeout, this, &MediaPlayer::positionChanged);
+
+    m_drainTimer.setInterval(50);
+    connect(&m_drainTimer, &QTimer::timeout, this, &MediaPlayer::onDrainTick);
 
     demuxerThread->start();
     videoThread->start();
@@ -34,123 +51,340 @@ MediaPlayer::MediaPlayer(QSharedPointer<VideoController> videoController,
 
 MediaPlayer::~MediaPlayer()
 {
+    demuxer->stop();
     videoDecoder->stop();
-    videoThread->quit();
-    videoThread->wait();
+    audioDecoder->stop();
+    m_audioPlayer->stop();
 
     demuxerThread->quit();
-    demuxerThread->wait();
-
-    audioDecoder->stop();
+    videoThread->quit();
     audioThread->quit();
+
+    demuxerThread->wait();
+    videoThread->wait();
     audioThread->wait();
 }
 
-void MediaPlayer::open(const QString &file)
+void MediaPlayer::start(const QString &file)
 {
-    demuxer->open(videoState, file);
+    if (file.isEmpty())
+        return;
 
-    videoDecoder->open(videoState->video_st->codecpar);
-    audioDecoder->open(videoState->audio_st->codecpar);
+    // Something is still running: tear it down first and pick this up again
+    // from finalizeStop().
+    if (m_demuxerRunning || m_activeDecoders > 0 || m_playbackState != Playback::Stopped) {
+        m_pendingSource = file;
+        stop();
+        return;
+    }
 
-    emit durationChanged();
-    emit sourceChanged();
-}
+    m_pendingSource.clear();
+    m_stopRequested = false;
+    m_finalizePending = false;
+    m_decodersStarted = false;
+    m_drainTicks = 0;
+    m_activeDecoders = 0;
+    m_demuxerRunning = true;
 
-void MediaPlayer::play()
-{
-    auto &audioStream = videoState->audio_st;
+    videoState->reset();
+    videoState->setSpeed(m_playbackRate);
+    m_source = file;
 
-    m_audioPlayer->configureFormat(
-        audioStream->codecpar->sample_rate,
-        audioStream->codecpar->ch_layout.nb_channels
-        );
-    m_audioPlayer->play();
-
-    m_playbackState = Playback::Playing;
-    emit playbackStateChanged();
+    // The worker threads are idle here, so clearing their stop flags directly
+    // is safe.
+    demuxer->prepare();
+    videoDecoder->prepare();
+    audioDecoder->prepare();
 
     QMetaObject::invokeMethod(
         demuxer,
-        "start",
-        videoState);
+        [this, file] { demuxer->open(videoState, file); },
+        Qt::QueuedConnection);
 
-    QMetaObject::invokeMethod(
-        audioDecoder,
-        "start",
-        videoState
-        );
+    setPlaybackStateInternal(Playback::Playing);
+    m_positionTimer.start();
 
-    QMetaObject::invokeMethod(
-        videoDecoder,
-        "start",
-        videoState
-        );
+    emit sourceChanged();
+    emit mediaChanged();
+}
+
+void MediaPlayer::onStreamsReady(QSharedPointer<VideoState> state)
+{
+    // Playback was stopped while the file was still being opened.
+    if (m_stopRequested)
+        return;
+
+    if (state->hasAudio) {
+        if (m_audioPlayer->configureFormat(state->audio_st->codecpar)) {
+            audioDecoder->setOutput(
+                m_audioPlayer->bufferDevice(),
+                m_audioPlayer->sampleRate(),
+                m_audioPlayer->channelCount(),
+                m_audioPlayer->sampleFormat());
+
+            audioDecoder->setTempo(m_playbackRate);
+            m_audioPlayer->play();
+
+            ++m_activeDecoders;
+            QMetaObject::invokeMethod(
+                audioDecoder,
+                [this, state] { audioDecoder->open(state); },
+                Qt::QueuedConnection);
+        } else {
+            // No usable output device: fall back to the free running clock.
+            state->hasAudio = false;
+        }
+    }
+
+    if (state->hasVideo) {
+        ++m_activeDecoders;
+        QMetaObject::invokeMethod(
+            videoDecoder,
+            [this, state] { videoDecoder->open(state); },
+            Qt::QueuedConnection);
+
+        // VideoManager lives on VideoController's worker thread.
+        QMetaObject::invokeMethod(
+            m_videoManager.get(),
+            "extractVideoThumbnails",
+            Qt::QueuedConnection,
+            Q_ARG(QString, state->fileName));
+    } else {
+        // Nothing will decode video for this file, so the item would sit on
+        // whatever played before it: put the cover art up instead, or the
+        // music glyph when the file carries none.
+        emit audioArtworkReady(ArtworkFrame::create(state->coverArt));
+    }
+
+    m_decodersStarted = m_activeDecoders > 0;
+    if (!m_decodersStarted) {
+        // Nothing can be played back from this file.
+        stop();
+        return;
+    }
+
+    emit durationChanged();
+    emit positionChanged();
 }
 
 void MediaPlayer::stop()
 {
-    m_playbackState = Playback::Stopped;
-    emit playbackStateChanged();
+    if (!m_demuxerRunning && m_activeDecoders == 0) {
+        if (m_playbackState != Playback::Stopped) {
+            m_stopRequested = true;
+            finalizeStop();
+        } else if (!m_pendingSource.isEmpty()) {
+            const QString next = m_pendingSource;
+            m_pendingSource.clear();
+            start(next);
+        }
+        return;
+    }
+
+    m_stopRequested = true;
+
+    // Releases whatever is blocked on the pause or on a full buffer.
+    videoState->setPaused(false);
     m_audioPlayer->stop();
 
+    demuxer->stop();
     videoDecoder->stop();
     audioDecoder->stop();
-    demuxer->stop();
+}
 
-    videoState = new VideoState;
+void MediaPlayer::onDecoderFinished()
+{
+    if (--m_activeDecoders > 0)
+        return;
+
+    m_activeDecoders = 0;
+    m_drainTicks = 0;
+    // Let the audio that is still queued play out before declaring the end.
+    m_drainTimer.start();
+}
+
+void MediaPlayer::onDemuxerFinished()
+{
+    m_demuxerRunning = false;
+
+    if (m_finalizePending)
+        finalizeStop();
+    else if (!m_decodersStarted)
+        finalizeStop(); // the file could not be opened
+}
+
+void MediaPlayer::onDrainTick()
+{
+    if (!m_stopRequested && m_audioPlayer->hasPendingAudio() && ++m_drainTicks < 60)
+        return;
+
+    m_drainTimer.stop();
+    m_finalizePending = true;
+
+    // The demuxer idles at end of file so seeking keeps working; it only goes
+    // away once playback is really over.
+    if (m_demuxerRunning)
+        demuxer->stop();
+    else
+        finalizeStop();
+}
+
+void MediaPlayer::finalizeStop()
+{
+    if (m_playbackState == Playback::Stopped && m_pendingSource.isEmpty())
+        return;
+
+    m_finalizePending = false;
+    m_positionTimer.stop();
+    m_drainTimer.stop();
+    m_audioPlayer->stop();
+
+    const bool endedNaturally = !m_stopRequested;
+
+    videoState->reset();
+    setPlaybackStateInternal(Playback::Stopped);
+    emit positionChanged();
+    emit resetCompleted();
+
+    if (!m_pendingSource.isEmpty()) {
+        const QString next = m_pendingSource;
+        m_pendingSource.clear();
+        start(next);
+        return;
+    }
+
+    if (endedNaturally && m_loop && !m_source.isEmpty()) {
+        //start(m_source);
+        return;
+    }
+
+    if (endedNaturally)
+        emit endOfMedia();
 }
 
 void MediaPlayer::pause_resume()
 {
-    if (m_audioPlayer->audioState() == QAudio::SuspendedState) {
-        m_playbackState = Playback::Playing;
-    } else if (m_audioPlayer->audioState() == QAudio::ActiveState) {
-        m_playbackState = Playback::Stopped;
-    }
-    emit playbackStateChanged();
-    m_audioPlayer->pause_resume();
+    if (m_playbackState == Playback::Stopped)
+        return;
 
-    if (!videoState->paused) {
-        videoState->paused = true;
-        videoState->clock.pausedStartMs = videoState->clock.clock.elapsed();
-    } else {
-        videoState->paused = false;
-        videoState->clock.pausedAccumulatedMs +=
-            videoState->clock.now() - videoState->clock.pausedStartMs;
-    }
+    const bool pause = m_playbackState == Playback::Playing;
+
+    videoState->setPaused(pause);
+    if (pause)
+        m_audioPlayer->suspend();
+    else
+        m_audioPlayer->resume();
+
+    setPlaybackStateInternal(pause ? Playback::Paused : Playback::Playing);
 }
 
-void MediaPlayer::seek(double timestamp)
+void MediaPlayer::seek(double positionMs)
 {
-    // if (m_demuxer->seek(timestamp)) {
-    //     // Flush decoder buffers
-    //     m_videoDecoder.flushBuffers();
-    //     m_audioDecoder.flushBuffers();
-    // }
+    if (m_playbackState == Playback::Stopped)
+        return;
+
+    double target = positionMs / 1000.0;
+    target = videoState->duration > 0.0 ? qBound(0.0, target, videoState->duration)
+                                        : qMax(0.0, target);
+
+    videoState->seekTarget.store(target);
+    videoState->skipUntil.store(target);
+    videoState->seekRequested.store(true);
+    videoState->refreshFrame.store(true);
+
+    // Re-anchor the clocks so the UI and the video decoder work off the new
+    // position instead of the timestamps we are leaving behind.
+    videoState->audioClock.invalidate();
+    videoState->externalClock.set(target);
+
+    // Unblocks the demuxer if it is waiting on a full queue, and throws away
+    // the packets and the PCM belonging to the old position.
+    videoState->videoq.flush();
+    videoState->audioq.flush();
+    m_audioPlayer->flush();
+
+    emit positionChanged();
+}
+
+void MediaPlayer::seekBy(double deltaMs)
+{
+    if (m_playbackState == Playback::Stopped)
+        return;
+
+    seek(position() + deltaMs);
+}
+
+double MediaPlayer::playbackRate() const
+{
+    return m_playbackRate;
+}
+
+void MediaPlayer::setPlaybackRate(double rate)
+{
+    rate = qBound(0.5, rate, 4.0);
+    if (qFuzzyCompare(m_playbackRate, rate))
+        return;
+
+    m_playbackRate = rate;
+    videoState->setSpeed(rate);
+    audioDecoder->setTempo(rate);
+
+    emit playbackRateChanged();
+}
+
+bool MediaPlayer::loop() const
+{
+    return m_loop;
+}
+
+void MediaPlayer::setLoop(bool loop)
+{
+    if (m_loop == loop)
+        return;
+
+    m_loop = loop;
+    emit loopChanged();
+}
+
+void MediaPlayer::onVideoFrameReady(AVFrame *frame)
+{
+    if (!frame)
+        return;
+
+    // Frames still in flight when playback stopped have nobody to display them.
+    if (m_playbackState == Playback::Stopped) {
+        av_frame_free(&frame);
+        return;
+    }
+
+    emit videoFrameReady(frame);
+}
+
+void MediaPlayer::setPlaybackStateInternal(Playback::PlaybackState state)
+{
+    if (m_playbackState == state)
+        return;
+
+    m_playbackState = state;
+    emit playbackStateChanged();
 }
 
 long MediaPlayer::framesCount() const
 {
-    if (!videoState) {
-        return 0;
-    }
-
-    return videoState->video_st->nb_frames;
+    return videoState ? videoState->frames_count : 0;
 }
 
-QString MediaPlayer::source()
+QString MediaPlayer::source() const
 {
-    if (!videoState) {
-        return QString("");
-    }
-
-    return videoState->fileName;
+    return m_source;
 }
 
 void MediaPlayer::setSource(const QString &newSource)
 {
-    videoState->fileName = newSource;
+    if (m_source == newSource)
+        return;
+
+    start(newSource);
 }
 
 bool MediaPlayer::muted() const
@@ -173,24 +407,17 @@ void MediaPlayer::setVolume(double volume)
     m_audioPlayer->setVolume(volume);
 }
 
+double MediaPlayer::maxVolume() const
+{
+    return AudioPlayer::MaxVolume;
+}
+
 double MediaPlayer::duration() const
 {
-    if (!videoState || !videoState->video_st)
-        return 0.0;
-
-    AVRational tb = videoState->video_st->time_base;
-    double seconds = videoState->video_st->duration * av_q2d(tb);
-
-    // milliseconds
-    return seconds * 1000.0;
+    return videoState ? videoState->duration * 1000.0 : 0.0;
 }
 
-void MediaPlayer::setDuration(double newDuration)
-{
-    // We don't need this.
-}
-
-Playback::PlaybackState MediaPlayer::playbackState()
+Playback::PlaybackState MediaPlayer::playbackState() const
 {
     return m_playbackState;
 }
@@ -199,36 +426,38 @@ void MediaPlayer::setPlaybackState(const Playback::PlaybackState &newPlaybackSta
 {
     if (m_playbackState == newPlaybackState)
         return;
-    m_playbackState = newPlaybackState;
-    emit playbackStateChanged();
+
+    switch (newPlaybackState) {
+    case Playback::Stopped:
+        stop();
+        break;
+    case Playback::Playing:
+        if (m_playbackState == Playback::Paused)
+            pause_resume();
+        break;
+    case Playback::Paused:
+        if (m_playbackState == Playback::Playing)
+            pause_resume();
+        break;
+    }
 }
 
 double MediaPlayer::position() const
 {
-    if (!videoState) {
-        return -1;
-    }
+    if (!videoState || m_playbackState == Playback::Stopped)
+        return 0.0;
 
-    AVRational tb = videoState->video_st->time_base;
-    double seconds = videoState->position * av_q2d(tb);
-    return qFloor(seconds * 1000);
+    double clock = videoState->masterClock();
+    if (std::isnan(clock))
+        return 0.0;
+
+    if (videoState->duration > 0.0)
+        clock = qBound(0.0, clock, videoState->duration);
+
+    return clock * 1000.0;
 }
 
 void MediaPlayer::setPosition(double newPosition)
 {
-    if (qFuzzyCompare(m_position, newPosition))
-        return;
-    m_position = newPosition;
-    emit positionChanged();
-}
-
-void MediaPlayer::onAudioFrameReady(const QByteArray &pcm)
-{
-    m_audioPlayer->pushPCM(pcm);
-}
-
-void MediaPlayer::onVideoFrameReady(const QImage &frame)
-{
-    emit videoFrameReady(frame);
-    emit positionChanged();
+    seek(newPosition);
 }

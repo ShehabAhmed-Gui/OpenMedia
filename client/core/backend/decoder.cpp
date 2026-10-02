@@ -1,108 +1,136 @@
 #include "decoder.h"
 
-#include <QDebug>
-#include "playbacklogger.h"
-#include "frameconverter.h"
-
-Decoder::Decoder()
+Decoder::Decoder(QObject *parent)
+    : QObject(parent)
 {
-    avframe = av_frame_alloc();
 }
 
 Decoder::~Decoder()
 {
-    if (avframe)
-        av_frame_free(&avframe);
-
-    if (m_ctx)
-        avcodec_free_context(&m_ctx);
+    closeCodec();
 }
 
-bool Decoder::open(AVCodecParameters *codecpar)
+bool Decoder::openCodec(AVStream *stream, int threadCount)
 {
-    const AVCodec *decoder = avcodec_find_decoder(codecpar->codec_id);
+    closeCodec();
 
-    if (!decoder) {
-        qCritical() << "Could not find a decoder";
+    const AVCodec *codec = avcodec_find_decoder(stream->codecpar->codec_id);
+    if (!codec) {
+        qCritical() << "No decoder for codec id" << stream->codecpar->codec_id;
         return false;
     }
 
-    m_ctx = avcodec_alloc_context3(decoder);
+    m_ctx = avcodec_alloc_context3(codec);
     if (!m_ctx)
         return false;
 
-    if (avcodec_parameters_to_context(m_ctx, codecpar) < 0)
+    int ret = avcodec_parameters_to_context(m_ctx, stream->codecpar);
+    if (ret < 0) {
+        PlaybackLogger::printStringError(ret, "avcodec_parameters_to_context failed:");
+        closeCodec();
         return false;
+    }
 
-    if (avcodec_open2(m_ctx, decoder, nullptr) < 0)
+    // Needed for correct frame timestamps.
+    m_ctx->pkt_timebase = stream->time_base;
+    m_ctx->thread_count = threadCount;
+
+    ret = avcodec_open2(m_ctx, codec, nullptr);
+    if (ret < 0) {
+        PlaybackLogger::printStringError(ret, "avcodec_open2 failed:");
+        closeCodec();
         return false;
+    }
 
-    qDebug() << "Found a decoder:" << decoder->name;
+    m_frame = av_frame_alloc();
+    if (!m_frame) {
+        closeCodec();
+        return false;
+    }
+
+    qDebug() << "Opened decoder:" << codec->name;
     return true;
 }
 
-void Decoder::decode_video_frame(VideoState *state, QImage &pic, AVPacket *pkt)
+void Decoder::closeCodec()
 {
-    if (!pkt)
-        return;
+    if (m_ctx)
+        avcodec_free_context(&m_ctx);
+    if (m_frame)
+        av_frame_free(&m_frame);
+}
 
+void Decoder::run(PacketQueue &packets)
+{
+    if (m_stopRequested) {
+        closeCodec();
+        emit finished();
+        return;
+    }
+
+    m_running = true;
+    m_queue = &packets;
+    m_serial = packets.serial();
+
+    while (m_running) {
+        AVPacket *pkt = nullptr;
+        int packetSerial = 0;
+
+        if (!packets.get(&pkt, &packetSerial))
+            break;
+
+        if (packetSerial != m_serial) {
+            m_serial = packetSerial;
+            avcodec_flush_buffers(m_ctx);
+            onFlush();
+        }
+
+        decodePacket(pkt);
+        av_packet_free(&pkt);
+    }
+
+    // Flush the codec so the tail of the file is played too.
+    if (m_running && !packets.isAborted())
+        decodePacket(nullptr);
+
+    m_running = false;
+    m_queue = nullptr;
+    closeCodec();
+    emit finished();
+}
+
+void Decoder::decodePacket(AVPacket *pkt)
+{
     int ret = avcodec_send_packet(m_ctx, pkt);
-    if (ret < 0) {
+    if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
         PlaybackLogger::printStringError(ret, "avcodec_send_packet failed:");
         return;
     }
 
-    while (true) {
-        ret = avcodec_receive_frame(m_ctx, avframe);
-
-        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+    while (m_running) {
+        ret = avcodec_receive_frame(m_ctx, m_frame);
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
             break;
-        }
 
         if (ret < 0) {
             PlaybackLogger::printStringError(ret, "avcodec_receive_frame failed:");
-            return;
-        }
-
-        state->pts = avframe->pts;
-
-        pic = FrameConverter::rawtoQImage(avframe);
-    }
-}
-
-void Decoder::decode_audio_frame(QByteArray &buffer, AVPacket *pkt)
-{
-    if (!pkt)
-        return;
-
-    int ret = avcodec_send_packet(m_ctx, pkt);
-    if (ret < 0) {
-        PlaybackLogger::printStringError(ret, "avcodec_send_packet failed:");
-        return;
-    }
-
-    while (true) {
-        ret = avcodec_receive_frame(m_ctx, avframe);
-
-        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
             break;
         }
 
-        if (ret < 0) {
-            PlaybackLogger::printStringError(ret, "avcodec_receive_frame failed:");
-            return;
-        }
-        buffer = FrameConverter::rawtoPcm(avframe);
+        processFrame(m_frame);
+        av_frame_unref(m_frame);
     }
 }
 
-void Decoder::flush()
+void Decoder::prepare()
 {
-    avcodec_send_packet(m_ctx, nullptr);
+    m_stopRequested = false;
 }
 
-void Decoder::flushBuffers()
+void Decoder::stop()
 {
-    avcodec_flush_buffers(m_ctx);
+    m_stopRequested = true;
+    m_running = false;
+    if (PacketQueue *packets = m_queue.load())
+        packets->abort();
 }
-

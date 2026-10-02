@@ -1,32 +1,44 @@
 #ifndef VIDEOITEM_H
 #define VIDEOITEM_H
 
-#include <QQmlEngine>
-#include <QQuickItem>
-#include <QSGSimpleTextureNode>
-#include <QImage>
+#include <QQuickFramebufferObject>
 
 extern "C" {
 #include <libavutil/frame.h>
 }
 
-class VideoItem : public QQuickItem
+class VideoItem : public QQuickFramebufferObject
 {
     Q_OBJECT
-    QML_ELEMENT
+
 public:
-    VideoItem();
-    // Q_INVOKABLE void updateFrame(const QByteArray &y, const QByteArray &u,
-    //                              const QByteArray &v, int width, int height);
-    Q_INVOKABLE void updateFrame(const QImage &frame);
-    // QQuickItem interface
-protected:
-    QSGNode *updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *) override;
+    explicit VideoItem(QQuickItem *parent = nullptr);
+    ~VideoItem() override;
+
+    // Takes ownership of the frame.
+    Q_INVOKABLE void updateYUVFrame(AVFrame *frame);
+    // Same, for the still picture that stands in for a file without a video
+    // track: it is fitted inside the item rather than filling it, so a cover
+    // does not get cropped by the shape of the window.
+    Q_INVOKABLE void updateArtworkFrame(AVFrame *frame);
+    // Drops what is on screen, so nothing of the previous file survives into
+    // the next one.
+    Q_INVOKABLE void clear();
+
+    Renderer *createRenderer() const override;
+
+    // Handed to the renderer from synchronize(), where the GUI thread is
+    // blocked, so the frame is never read and freed at the same time.
+    AVFrame *takePendingFrame();
+    bool isArtwork() const;
+    bool takeClearRequest();
 
 private:
-    QImage m_frame;
-    QByteArray m_y, m_u, m_v;
-    int m_w = 0, m_h = 0;
+    void setFrame(AVFrame *frame, bool artwork);
+
+    AVFrame *m_pendingFrame = nullptr;
+    bool m_artwork = false;
+    bool m_clearRequested = false;
 };
 
 #endif // VIDEOITEM_H

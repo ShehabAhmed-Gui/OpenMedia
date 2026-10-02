@@ -6,6 +6,7 @@
 #include <QMap>
 #include <QImage>
 #include <QDebug>
+#include <qmutex.h>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -19,7 +20,7 @@ class ThumbnailsExtractor : public QObject
 public:
     ThumbnailsExtractor(QObject *parent = nullptr);
     void extractVideoThumbnails(const QString &path);
-    QImage getVideoFrame(qint64 timestamp);
+    QImage getThumbnailAtTimestamp(qint64 timestamp);
 
 signals:
     void extractingInProgress();
@@ -27,6 +28,7 @@ signals:
 
 private:
     QMap<quint64, QImage> m_thumbnails;
+    QMutex m_mutex;
 };
 
 #endif // THUMBNAILSEXTRACTOR_H

@@ -1,4 +1,5 @@
 #include "thumbnailsextractor.h"
+#include <qmutex.h>
 #include <thread>
 #include <mutex>
 
@@ -157,14 +158,8 @@ void ThumbnailsExtractor::extractVideoThumbnails(const QString &path)
     emit extractedVideoThumbnails();
 }
 
-QImage ThumbnailsExtractor::getVideoFrame(qint64 timestamp)
+QImage ThumbnailsExtractor::getThumbnailAtTimestamp(qint64 timestamp)
 {
-    QImage thumbnail = m_thumbnails[timestamp / 1000];
-
-    if (thumbnail.isNull()) {
-        qDebug() << "Could not find a frame at this timestamp";
-        return QImage(QSize(200, 200), QImage::Format_RGB888);
-    }
-
-    return thumbnail;
+    QMutexLocker lock(&m_mutex);
+    return m_thumbnails.value(timestamp / 1000); // null image if not extracted yet
 }

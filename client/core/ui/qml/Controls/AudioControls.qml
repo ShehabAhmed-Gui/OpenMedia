@@ -1,88 +1,91 @@
 import QtQuick
 import QtQuick.Layouts
+
 import "../components"
+import "../theme"
 
 Item {
     id: root
-    Layout.minimumWidth: 150
-    Layout.maximumWidth: 150
 
     property alias volumeSlider: volumeSlider
     property alias muteButton: muteButton
-    property int volumeLevel: MediaPlayerController.volume
-
+    property int volumeLevel: Math.round(MediaPlayerController.volume * 100)
     property bool muted: MediaPlayerController.muted
+    readonly property bool boosted: volumeSlider.value > 100
 
     RowLayout {
-        id: audioRL
-        anchors.fill: root
-        spacing: 10
+        anchors.fill: parent
+        spacing: Theme.sm
 
         CustomButton {
             id: muteButton
 
-            ToolTipType {
-                toolTipText: muted? "Unmute" : "Mute"
-            }
+            iconSource: (muted || volumeLevel === 0)
+                        ? "qrc:/ui/icons/svg/muted.svg"
+                        : volumeLevel < 60 ? "qrc:/ui/icons/svg/volume_low.svg"
+                                           : "qrc:/ui/icons/svg/volume_high.svg"
+            iconWidth: 14
+            iconHeight: 14
+            iconColor: muted ? Theme.textFaint : boosted ? Theme.boost : Theme.textMuted
 
-            iconSource: (muted || volumeLevel === 0? "qrc:/ui/icons/svg/muted.svg" : volumeLevel < 70
-                   ? "qrc:/ui/icons/svg/volume_low.svg"
-                   : "qrc:/ui/icons/svg/volume_high.svg")
-            iconWidth: 13
-            iconHeight: 13
+            ToolTipType { toolTipText: muted ? "Unmute" : "Mute" }
 
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
-                onClicked: {
-                    MediaPlayerController.muted = !MediaPlayerController.muted
-                }
-            }
+            onClicked: MediaPlayerController.muted = !MediaPlayerController.muted
         }
 
         CustomSliderType {
             id: volumeSlider
 
-            Layout.minimumWidth: 100
-            Layout.maximumWidth: 100
-
-            enableGradiant: true
-            gradiantFirstColor: "#4A9782"
-            gradiantSecondColor: "#4A9782"
-            subPageColor: "#064232"
-            handleColor: "#67C090"
-            sliderHeight: 7
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignVCenter
 
             from: 0
-            to: 100
-            value: MediaPlayerController.volume * 100
+            to: Math.round(MediaPlayerController.maxVolume * 100)
+            stepSize: 1
+            value: Math.round(MediaPlayerController.volume * 100)
 
-            onValueChanged: {
-                volumeLevel = value
+            fillColor: root.boosted ? Theme.boost : Theme.accent
+
+            opacity: muted ? 0.45 : 1.0
+            Behavior on opacity { NumberAnimation { duration: Theme.durFast } }
+
+            onMoved: {
+                // Detent so 100% is easy to land on.
+                if (Math.abs(volumeSlider.value - 100) <= 3)
+                    volumeSlider.value = 100
                 MediaPlayerController.volume = volumeSlider.value / 100
             }
 
-            // Connections {
-            //     target: mediaPlayer.audioOutput
-            //     property int videoVolume
-            //     function onVolumeChanged() {
-            //         videoVolume = mediaPlayer.audioOutput.volume * 100
-            //         volumeSlider.value = videoVolume
-            //     }
-            // }
+            Rectangle {
+                parent: volumeSlider.sliderBackgroundRect
+                x: parent.width * 100 / volumeSlider.to - width / 2
+                anchors.verticalCenter: parent.verticalCenter
+                width: 2
+                height: parent.height + 4
+                radius: 1
+                color: Theme.textFaint
+            }
 
-            Layout.fillWidth: true
-            Layout.alignment: Qt.AlignVCenter
+            Connections {
+                target: MediaPlayerController
+                function onVolumeChanged() {
+                    if (!volumeSlider.pressed)
+                        volumeSlider.value = Math.round(MediaPlayerController.volume * 100)
+                }
+            }
         }
 
         Text {
-            id: volumeLevelText
-            text: volumeSlider.value + "%"
-            font.pixelSize: 13
-            font.family: "Poppins"
-            font.weight: Font.Medium
+            Layout.minimumWidth: 34
+            horizontalAlignment: Text.AlignRight
 
-            color: "#f3eff5"
+            text: volumeSlider.value + "%"
+            color: root.boosted ? Theme.boost : Theme.textMuted
+
+            font.family: Theme.fontFamily
+            font.pixelSize: Theme.captionSize
+            font.weight: Font.Medium
+            font.features: { "tnum": 1 }
         }
     }
 }

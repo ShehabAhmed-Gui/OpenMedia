@@ -1,135 +1,169 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
 
 import "../delegates"
+import "../theme"
 
-Rectangle {
+Item {
     id: root
-    color: "#1E1E1E"
-    radius: 8
-    border.color: "#685752"
 
     property alias listView: listView
 
-    MouseArea {
-        anchors.fill: parent
-        preventStealing: true
+    MultiEffect {
+        source: panel
+        anchors.fill: panel
+        shadowEnabled: true
+        shadowColor: Qt.rgba(0, 0, 0, 0.55)
+        shadowBlur: 0.6
+        shadowVerticalOffset: 6
     }
 
-    ColumnLayout {
+    Rectangle {
+        id: panel
         anchors.fill: parent
-        spacing: 15
+        color: Qt.rgba(Theme.surface.r, Theme.surface.g, Theme.surface.b, 0.94)
+        radius: Theme.radiusPanel
+        border.color: Theme.hairline
+        border.width: 1
 
-        Rectangle {
-            width: parent.width
-            height: 50
-            color: "transparent"
+        MouseArea {
+            anchors.fill: parent
+            preventStealing: true
+            hoverEnabled: true
+            onEntered: afkTimer.stop()
+            onExited: afkTimer.start()
+        }
 
-            CustomButton {
-                id: clearPlaylist
-                anchors.verticalCenter: addItems.verticalCenter
-                anchors.left: parent.left
-                anchors.leftMargin: 20
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: Theme.lg
+            spacing: Theme.md
 
-                iconSource: "qrc:/ui/icons/svg/trash.svg"
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.sm
 
-                ToolTipType {
-                    toolTipText: qsTr("Remove all videos")
+                Text {
+                    text: qsTr("Playlist")
+                    color: Theme.text
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.titleSize
+                    font.weight: Font.DemiBold
                 }
 
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
+                Text {
+                    text: PlaylistModel.count
+                    color: Theme.textFaint
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.captionSize
+                    font.weight: Font.Medium
+                    font.features: { "tnum": 1 }
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                Item { Layout.fillWidth: true }
+
+                CustomButton {
+                    id: addItems
+                    iconSource: "qrc:/ui/icons/svg/plus.svg"
+                    iconWidth: 15
+                    iconHeight: 15
+                    buttonWidth: 30
+                    buttonHeight: 30
+
+                    ToolTipType { toolTipText: qsTr("Add files") }
+
+                    onClicked: PlaylistModel.loadVideos()
+                }
+
+                CustomButton {
+                    id: clearPlaylist
+                    iconSource: "qrc:/ui/icons/svg/trash.svg"
+                    iconWidth: 15
+                    iconHeight: 15
+                    buttonWidth: 30
+                    buttonHeight: 30
+                    iconHoverColor: Theme.danger
+
+                    ToolTipType { toolTipText: qsTr("Remove all") }
+
                     onClicked: PlaylistModel.clearPlaylist()
                 }
             }
 
-            Text {
-                id: playlistTitle
-                text: qsTr("Videos Playlist")
-
-                color: "#ffffff"
-
-                font.family: "Poppins"
-                font.pixelSize: 13
-                font.weight: Font.Normal
-
-                anchors.centerIn: parent
-                anchors.horizontalCenter: parent.horizontalCenter
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 1
+                color: Theme.hairline
             }
 
-            CustomButton {
-                id: addItems
-                iconSource: "qrc:/ui/icons/svg/plus.svg"
-                backgroundColor: "transparent"
+            ListView {
+                id: listView
 
-                width: iconWidth + 5
-                height: iconHeight + 5
+                Layout.fillHeight: true
+                Layout.fillWidth: true
 
-                anchors.right: parent.right
-                anchors.rightMargin: 20
-                anchors.verticalCenter: parent.verticalCenter
+                signal playNext()
+                signal playPrevious()
 
-                ToolTipType {
-                    toolTipText: "Add videos"
+                model: PlaylistModel
+                spacing: Theme.xs
+                clip: true
+                boundsBehavior: Flickable.StopAtBounds
+
+                delegate: PlaylistDelegate {}
+
+                add: Transition {
+                    NumberAnimation { properties: "opacity"; from: 0; to: 1; duration: Theme.durBase }
+                    NumberAnimation { properties: "x"; from: 24; duration: Theme.durBase; easing.type: Theme.easeOut }
+                }
+                remove: Transition {
+                    NumberAnimation { properties: "opacity"; to: 0; duration: Theme.durFast }
+                }
+                displaced: Transition {
+                    NumberAnimation { properties: "x,y"; duration: Theme.durBase; easing.type: Theme.easeOut }
                 }
 
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: parent.hovered? Qt.PointingHandCursor : Qt.ArrowCursor
+                onPlayNext: {
+                    var source = PlaylistModel.getNext();
+                    if (source === "")
+                        return;
 
-                    onClicked: PlaylistModel.loadVideos();
-                }
-            }
-        }
-
-        ListView {
-            id: listView
-
-            Layout.fillHeight: true
-            Layout.fillWidth: true
-
-            signal playNext()
-            signal playPrevious()
-
-            model: PlaylistModel
-
-            spacing: 20
-            clip: true
-
-            delegate: PlaylistDelegate {
-            }
-
-            contentHeight: PlaylistModel.count * (delegate.height + spacing) + 10
-
-            onPlayNext: {
-                var source = Qt.url(PlaylistModel.getNext());
-                if (source.toString() === "") {
-                    return;
+                    MediaPlayerController.start(source)
                 }
 
-                // TODO: implement this
-                //MediaPlayerController.changeMediaFile(source)
-            }
+                onPlayPrevious: {
+                    var source = PlaylistModel.getPrevious();
+                    if (source === "")
+                        return;
 
-            onPlayPrevious: {
-                var source = Qt.url(PlaylistModel.getPrevious());
-                if (source.toString() === "") {
-                    return;
+                    MediaPlayerController.start(source)
                 }
 
-                mediaPlayer.source = source
-                Qt.callLater(() => {
-                    mediaPlayer.play()
-                });
-            }
-        }
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    width: parent.width - Theme.xl
+                    spacing: Theme.md
+                    visible: PlaylistModel.count === 0
 
-        Rectangle {
-            id: sapcer
-            width: listView.width
-            height: 5
-            color: "transparent"
+                    Image {
+                        source: "qrc:/ui/icons/logo_mono.svg"
+                        sourceSize: Qt.size(56, 56)
+                        opacity: 0.14
+                        Layout.alignment: Qt.AlignHCenter
+                    }
+
+                    Text {
+                        text: qsTr("Nothing queued yet")
+                        color: Theme.textFaint
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.labelSize
+                        font.weight: Font.Medium
+                        Layout.alignment: Qt.AlignHCenter
+                    }
+                }
+            }
         }
     }
 }
