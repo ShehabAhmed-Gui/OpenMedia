@@ -1,54 +1,61 @@
 import QtQuick
 import QtQuick.Layouts
+
 import "../components"
+import "../theme"
 
 Item {
     id: root
-    Layout.minimumWidth: 100
-    Layout.maximumWidth: 200
 
     property bool showPlaybackSpeedIcon: true
     property alias playbackSlider: playBackSpeedSlider
 
     RowLayout {
         anchors.fill: parent
-        spacing: 10
+        spacing: Theme.sm
 
-        Image {
+        AppIcon {
             visible: showPlaybackSpeedIcon
-            Layout.minimumHeight: 13
-            Layout.minimumWidth: 13
             source: "qrc:/ui/icons/svg/playback_rate.svg"
+            size: 16
+            color: Theme.textMuted
+            Layout.alignment: Qt.AlignVCenter
         }
 
         CustomSliderType {
             id: playBackSpeedSlider
 
-            enableGradiant: true
-            gradiantFirstColor: "#06D001"
-            gradiantSecondColor: "#06D001"
-            subPageColor: "#365E32"
-            enableHandler: false
-
-            sliderHeight: 7
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignVCenter
 
             from: 0.5
             to: 2.5
-            stepSize: 0.5
-            value: 1.0
+            stepSize: 0.25
+            value: MediaPlayerController.playbackRate
 
-            onValueChanged: mediaPlayer.playbackRate = value
+            onMoved: MediaPlayerController.playbackRate = value
 
-            Layout.fillWidth: true
+            Connections {
+                target: MediaPlayerController
+                function onPlaybackRateChanged() {
+                    // Dragging breaks the value binding, so restore it here.
+                    if (!playBackSpeedSlider.pressed)
+                        playBackSpeedSlider.value = MediaPlayerController.playbackRate
+                }
+            }
         }
 
         Text {
-            text: playBackSpeedSlider.value.toFixed(1) + "x"
-            color: "#41CD52"
+            Layout.minimumWidth: 34
+            horizontalAlignment: Text.AlignRight
 
-            font.pixelSize: 13
-            font.family: "Poppins"
+            text: playBackSpeedSlider.value.toFixed(2).replace(/\.?0+$/, "") + "x"
+            color: playBackSpeedSlider.value === 1 ? Theme.textMuted : Theme.accent
+
+            font.family: Theme.fontFamily
+            font.pixelSize: Theme.captionSize
             font.weight: Font.Medium
+            font.features: { "tnum": 1 }
         }
     }
 }

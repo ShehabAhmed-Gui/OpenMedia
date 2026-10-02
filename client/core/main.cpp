@@ -2,11 +2,16 @@
 #include <QQmlContext>
 #include <QIcon>
 #include <QApplication>
+#include <QQuickWindow>
+#include <QQuickStyle>
 
 #include "settings.h"
 #include "filesmanager.h"
 #include "settingsloader.h"
 #include "corecontroller.h"
+
+#include "mediaplayer.h"
+#include "videoitem.h"
 
 #include <QLoggingCategory>
 
@@ -14,10 +19,22 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
+    QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
     // Disable all multimedia logs
     QLoggingCategory::setFilterRules("qt.multimedia.*=false");
 
+    QSurfaceFormat fmt;
+    fmt.setVersion(3, 3);
+    fmt.setProfile(QSurfaceFormat::CoreProfile);
+    QSurfaceFormat::setDefaultFormat(fmt);
+
+    // The native Windows style refuses control customization.
+    QQuickStyle::setStyle("Basic");
+
     QApplication app(argc, argv);
+
+    // Decoded frames are handed over through queued connections and through QML.
+    qRegisterMetaType<AVFrame *>("AVFrame*");
 
     QQmlApplicationEngine *engine = new QQmlApplicationEngine();
 
@@ -25,7 +42,7 @@ int main(int argc, char *argv[])
 
     app.setOrganizationName("OpenMedia");
     app.setApplicationName("OpenMedia");
-    app.setWindowIcon(QIcon(":/ui/icons/icon.png"));
+    app.setWindowIcon(QIcon(":/ui/icons/logo_tile.svg"));
 
     QSharedPointer<Settings> settings;
     settings.reset(new Settings(&app));
@@ -65,5 +82,10 @@ int main(int argc, char *argv[])
     if (engine->rootObjects().isEmpty())
         return -1;
 
-    return app.exec();
+    const int result = app.exec();
+
+    // The QML bindings reference the controllers, so the engine has to go first.
+    delete engine;
+
+    return result;
 }

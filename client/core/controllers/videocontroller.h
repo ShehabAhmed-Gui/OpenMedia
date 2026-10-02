@@ -16,16 +16,17 @@ public:
 
     ~VideoController();
 
-    Q_PROPERTY(VideoManager::Loop loopState READ loopState WRITE setLoopState NOTIFY loopStateChanged FINAL)
+    Q_PROPERTY(bool loop READ loop WRITE setLoop NOTIFY loopChanged FINAL)
 
-    Q_INVOKABLE VideoManager::Loop loopState() const;
-    Q_INVOKABLE void setLoopState(VideoManager::Loop newLoopState);
+    Q_INVOKABLE bool loop() const;
+    Q_INVOKABLE void setLoop(bool newLoop);
+    Q_INVOKABLE QImage getThumbnailAtTimestamp(quint64 timestamp);
 
+public slots:
     Q_INVOKABLE void extractVideoThumbnails(const QString &path);
-    Q_INVOKABLE QImage getVideoFrame(quint64 timestamp);
 
 signals:
-    void loopStateChanged();
+    void loopChanged();
     void frameUpdated(int timestamp);
     void extractingInProgress();
     void extractedVideoThumbnails();
@@ -33,7 +34,6 @@ signals:
 
 private:
     QSharedPointer<VideoManager> m_videoManager;
-    VideoManager::Loop m_loopState;
 
     QThread *workerThread;
 };

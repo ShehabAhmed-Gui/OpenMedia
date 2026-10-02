@@ -36,11 +36,18 @@
         <file>ui/fonts/Poppins-Medium.ttf</file>
         <file>ui/fonts/Poppins-Regular.ttf</file>
         <file>ui/fonts/Poppins-SemiBold.ttf</file>
-        <file>ui/icons/svg/loop_active.svg</file>
-        <file>ui/icons/svg/loop_disabled.svg</file>
         <file>ui/qml/delegates/PlaylistDelegate.qml</file>
         <file>ui/icons/svg/music_media.svg</file>
         <file>ui/qml/pages/SettingsShortcutsSubPage.qml</file>
         <file>ui/qml/pages/Settings.qml</file>
+        <file>ui/icons/svg/loop.svg</file>
+        <file>ui/icons/logo.svg</file>
+        <file>ui/icons/logo_mono.svg</file>
+        <file>ui/icons/logo_tile.svg</file>
+        <file>ui/qml/theme/Theme.qml</file>
+        <file>ui/qml/theme/qmldir</file>
+        <file>ui/qml/components/AppIcon.qml</file>
+        <file>ui/shaders/yuv_core.frag</file>
+        <file>ui/shaders/yuv_core.vert</file>
     </qresource>
 </RCC>

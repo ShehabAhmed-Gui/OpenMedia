@@ -8,11 +8,16 @@ FrameProvider::FrameProvider(QSharedPointer<VideoManager> videoManager)
 
 QImage FrameProvider::requestImage(const QString &id, QSize *size, const QSize &requestedSize)
 {
-    bool ok;
-    quint64 timestamp = id.toInt(&ok);
-    if (!ok) return QImage();
+    bool ok = false;
+    const qint64 timestampMs = id.toLongLong(&ok);
+    if (!ok)
+        return {};
 
-    QImage result = m_videoManager->getVideoFrame(timestamp);
+    QImage image = m_videoManager->getThumbnailAtTimestamp(timestampMs);
+    if (!image.isNull() && requestedSize.isValid())
+        image = image.scaled(requestedSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
-    return result;
+    if (size)
+        *size = image.size();
+    return image;
 }

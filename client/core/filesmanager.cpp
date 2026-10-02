@@ -8,7 +8,6 @@ FilesManager::FilesManager(QSharedPointer<SettingsController> settingsController
     , m_folderMonitor(folderMonitor)
 {
     dialog = new QFileDialog();
-
     connect(m_folderMonitor.get(), &FolderMonitor::fileChanged, this, &FilesManager::fileChanged);
     connect(m_folderMonitor.get(), &FolderMonitor::fileChanged, this, &FilesManager::fileChanged);
 }

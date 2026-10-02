@@ -94,17 +94,29 @@ void PlaylistModel::loadVideos()
             beginInsertRows(QModelIndex(), m_data.size(), m_data.size());
             m_data.append(item);
             endInsertRows();
+            emit countChanged();
         }
     }
 }
 
 void PlaylistModel::deleteItem(const qsizetype &index)
 {
-    if (index != 0  || !(index > m_data.size())) {
-        beginRemoveRows(QModelIndex(), index, index);
-        m_data.removeAt(index);
-        endRemoveRows();
-    } else { qWarning() << "Item doesn't exist"; }
+    if (index < 0 || index >= m_data.size()) {
+        qWarning() << "Playlist item" << index << "does not exist";
+        return;
+    }
+
+    beginRemoveRows(QModelIndex(), index, index);
+    m_data.removeAt(index);
+    endRemoveRows();
+
+    // Keep the cursor pointing at the same entry it did before.
+    if (m_currentIndex > index)
+        --m_currentIndex;
+    m_currentIndex = qBound<qsizetype>(0, m_currentIndex, qMax<qsizetype>(0, m_data.size() - 1));
+
+    emit countChanged();
+    emit currentIndexChanged();
 }
 
 void PlaylistModel::clearPlaylist()
@@ -117,7 +129,9 @@ void PlaylistModel::clearPlaylist()
     m_data.clear();
     endRemoveRows();
 
-    m_currentIndex = -1;
+    m_currentIndex = 0;
+    emit countChanged();
+    emit currentIndexChanged();
 }
 
 QString PlaylistModel::getPrevious()
@@ -126,8 +140,11 @@ QString PlaylistModel::getPrevious()
         return QString();
     }
 
-    m_currentIndex = m_currentIndex == 0? m_data.size() - 1 : m_currentIndex - 1;
+    // The cursor can be stale after items were removed.
+    m_currentIndex = qBound<qsizetype>(0, m_currentIndex, m_data.size() - 1);
+    m_currentIndex = m_currentIndex == 0 ? m_data.size() - 1 : m_currentIndex - 1;
 
+    emit currentIndexChanged();
     return m_data.at(m_currentIndex);
 }
 
@@ -137,9 +154,26 @@ QString PlaylistModel::getNext()
         return QString();
     }
 
-    m_currentIndex = m_currentIndex == m_data.size() - 1? 0 : m_currentIndex + 1;
+    m_currentIndex = qBound<qsizetype>(0, m_currentIndex, m_data.size() - 1);
+    m_currentIndex = m_currentIndex == m_data.size() - 1 ? 0 : m_currentIndex + 1;
 
+    emit currentIndexChanged();
     return m_data.at(m_currentIndex);
+}
+
+void PlaylistModel::setCurrentPath(const QString &path)
+{
+    const qsizetype index = m_data.indexOf(path);
+    if (index < 0 || index == m_currentIndex)
+        return;
+
+    m_currentIndex = index;
+    emit currentIndexChanged();
+}
+
+int PlaylistModel::count() const
+{
+    return static_cast<int>(m_data.size());
 }
 
 qsizetype PlaylistModel::currentIndex() const
@@ -149,6 +183,7 @@ qsizetype PlaylistModel::currentIndex() const
 
 void PlaylistModel::setCurrentIndex(qsizetype newCurrentIndex)
 {
+    newCurrentIndex = qBound<qsizetype>(0, newCurrentIndex, qMax<qsizetype>(0, m_data.size() - 1));
     if (m_currentIndex == newCurrentIndex)
         return;
     m_currentIndex = newCurrentIndex;
@@ -157,11 +192,9 @@ void PlaylistModel::setCurrentIndex(qsizetype newCurrentIndex)
 
 void PlaylistModel::onMediaFileChanged(const QString &path)
 {
-    for (int i = 0; i < m_data.size(); ++i) {
-        if (m_data[i] == path) {
-            beginRemoveRows(QModelIndex(), i, i);
-            m_data.remove(i);
-            endRemoveRows();
-        }
+    // Walk backwards: removing while iterating forwards skips entries.
+    for (qsizetype i = m_data.size() - 1; i >= 0; --i) {
+        if (m_data.at(i) == path)
+            deleteItem(i);
     }
 }

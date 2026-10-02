@@ -1,97 +1,95 @@
 import QtQuick
 import QtQuick.Window
-import QtQuick.Controls.Fusion
-import QtMultimedia
+import QtQuick.Controls
 
 import com.qt.openmedia 1.0
 
 import "controls"
 import "components"
+import "theme"
 
 ApplicationWindow {
     id: mainWindow
+
     readonly property bool isMobileTarget: Qt.platform.os === "android" || Qt.platform.os === "ios"
     readonly property string os: Qt.platform.os
-    readonly property bool soundMuted: SettingsController.isMuted()
 
-    property alias videoState: mediaPlayer.playbackState
+    property var videoState: MediaPlayerController.playbackState
+    property bool controlsVisible: true
+    property bool playlistOpen: false
 
     flags: Qt.Window
 
     width: 1500
     height: 800
-    minimumHeight: 500
-    minimumWidth: 850
+    minimumHeight: 480
+    minimumWidth: 640
     visible: true
     title: "OpenMedia"
-    color: "#000000"
-    Component.onCompleted: {
-        console.debug("Application Started")
+    color: Theme.base
 
-        // Load settings
-        bottomControls.audioType.setMuted(soundMuted)
+    Component.onCompleted: {
+        MediaPlayerController.muted = SettingsController.isMuted()
     }
 
     onClosing: {
-        console.log("Saving app settings")
-
         subtitleProxyModel.sourceModel = null
         audioProxyModel.sourceModel = null
 
-        // Save Audio settings
-        SettingsController.saveSetting("Audio", "volume", (audioOutput.volume * 100).toFixed());
-        SettingsController.saveSetting("Audio", "muted", audioOutput.muted);
-
-        // Save Video settings
-        SettingsController.saveSetting("Video", "position", mediaPlayer.position / 1000)
-        SettingsController.saveSetting("Video", "video", mediaPlayer.source)
+        SettingsController.saveSetting("Audio", "volume", MediaPlayerController.volume * 100);
+        SettingsController.saveSetting("Audio", "muted", MediaPlayerController.muted);
+        SettingsController.saveSetting("Video", "position", MediaPlayerController.position / 1000)
+        SettingsController.saveSetting("Video", "video", MediaPlayerController.source)
     }
 
     function setMouseCursorVisible(state) {
-        switch (state) {
-            case true:
-                videoMouseArea.cursorShape = Qt.ArrowCursor;
-                bottomControls.bottomMA.cursorShape = Qt.ArrowCursor;
-                break;
-            case false:
-                videoMouseArea.cursorShape = Qt.BlankCursor;
-                bottomControls.bottomMA.cursorShape = Qt.BlankCursor;
-                break;
-            default:
-            break;
-        }
+        videoMouseArea.cursorShape = state ? Qt.ArrowCursor : Qt.BlankCursor
+        bottomControls.bottomMA.cursorShape = state ? Qt.ArrowCursor : Qt.BlankCursor
+    }
+
+    function revealControls() {
+        setMouseCursorVisible(true)
+        controlsVisible = true
+        afkTimer.restart()
     }
 
     Connections {
-        id: titleChanger
-        target: mediaPlayer
+        target: MediaPlayerController
 
-        function onPlaybackStateChanged () {
-            if (mediaPlayer.playbackState === MediaPlayer.PlayingState) {
-                var fileUrl = mediaPlayer.source.toString();
-                var fileName = fileUrl.split("/").pop();  // Extract filename from path
+        function onPlaybackStateChanged() {
+            videoState = MediaPlayerController.playbackState
 
+            if (videoState !== Playback.Stopped) {
+                var fileName = MediaPlayerController.source.split(/[\\/]/).pop();
                 var parts = fileName.split(".");
                 if (parts.length > 1)
                     parts.pop();
 
-                var baseName = parts.join(".");
-                mainWindow.title = "OpenMedia -  " + baseName;
+                mainWindow.title = "OpenMedia — " + parts.join(".")
+            } else {
+                mainWindow.title = "OpenMedia"
             }
         }
-    }
 
-    Connections {
-        id: loopConnections
-        target: VideoController
+        function onVideoFrameReady(frame) {
+            // The item takes ownership of the frame, so it must always be passed on.
+            video.updateYUVFrame(frame);
+        }
 
-        function onLoopStateChanged() {
-            switch (VideoController.loopState) {
-            case 1: mediaPlayer.loops = MediaPlayer.Infinite
-                break;
-            case 2: mediaPlayer.loops = 1;
-                break;
-            }
+        function onAudioArtworkReady(frame) {
+            video.updateArtworkFrame(frame);
+        }
+
+        function onEndOfMedia() {
+            video.clear();
+            playlist.listView.playNext();
+        }
+
+        function onSourceChanged() {
+            // Nothing of the previous file stays on screen while this one opens.
+            video.clear();
+            // Keeps next/previous relative to what is actually playing.
+            PlaylistModel.setCurrentPath(MediaPlayerController.source);
         }
     }
 
@@ -99,194 +97,64 @@ ApplicationWindow {
         target: VideoController
 
         function onPlayMediaFile(path) {
-            hidePlaylist.start()
-            mediaPlayer.stop();
-            Qt.callLater(() => {
-                mediaPlayer.source = Qt.url(path);
-                mediaPlayer.play();
-                mediaPlayer.position = 0;
-            });
+            playlistOpen = false
+            MediaPlayerController.start(path);
         }
     }
 
     Timer {
-        id: hoverTimer
-        interval: 3000
-        onTriggered: showControls.start()
-    }
-
-    Timer {
         id: afkTimer
-        interval: 4000
-        repeat: true
+        interval: 2600
+        repeat: false
         onTriggered: {
-            if(bottomControls.isMediaSliderPressed || bottomControls.opacity === 0) {
+            if (bottomControls.isMediaSliderPressed || playlistOpen) {
                 afkTimer.restart()
-            } else {
-                setMouseCursorVisible(false)
-                hideControls.start()
+                return
             }
+
+            setMouseCursorVisible(false)
+            controlsVisible = false
         }
     }
 
     Item {
         id: mediaPlayerContainer
         anchors.fill: parent
-        width: 500
-        height: 500
 
         Component.onCompleted: afkTimer.start()
+
+        VideoItem {
+            id: video
+            anchors.fill: parent
+        }
 
         MouseArea {
             id: videoMouseArea
             anchors.fill: parent
             hoverEnabled: true
-            propagateComposedEvents: true
 
-            onPositionChanged: {
-               setMouseCursorVisible(true);
-               afkTimer.restart()
-               if (bottomControls.opacity === 0)
-                   showControls.start()
-            }
+            onPositionChanged: revealControls()
 
             TapHandler {
                 onDoubleTapped: mainWindow.visibility === Window.FullScreen
                                 ? showNormal() : showFullScreen()
-                onTapped: videoState === MediaPlayer.PlayingState
-                          ? mediaPlayer.pause() : mediaPlayer.play()
+                onTapped: MediaPlayerController.pause_resume()
             }
-
-            function onHoveredChanged(hovered) {
-                if (hovered) {
-                    hoverTimer.start()
-                }
-
-                hoverTimer.stop()
-            }
-        }
-
-        MediaPlayer {
-            id: mediaPlayer
-
-            videoOutput: videoOutput
-            audioOutput: audioOutput
-
-            source: Qt.url(SettingsController.getLastLoadedVideo())
-            loops: VideoController.loopState? MediaPlayer.Infinite : 1
-
-            onSeekableChanged: {
-                if (mediaPlayer.seekable) {
-                    // Fixes a bug on windows
-                    Qt.callLater(() => {
-                        mediaPlayer.position = SettingsController.getLastPosition();
-                    });
-                }
-            }
-
-            onTracksChanged: {
-                MetaDataModel.setSubtitles(mediaPlayer.subtitleTracks)
-                MetaDataModel.setAudioTracks(mediaPlayer.audioTracks)
-            }
-
-            Component.onCompleted: {
-                audioOutput.muted = soundMuted
-
-                mediaPlayer.audioOutput.volume = SettingsController.getVolume()
-                mediaPlayer.source = SettingsController.getLastLoadedVideo()
-
-                // Set loaded mediaPlayer to last-saved frame instead of black screen
-                mediaPlayer.play()
-                mediaPlayer.pause()
-            }
-
-            onSourceChanged: {
-                VideoController.extractVideoThumbnails(mediaPlayer.source)
-                SettingsController.saveSetting("Video", "video", mediaPlayer.source.toString())
-            }
-        }
-
-        Keys.onSpacePressed: {
-            if (!bottomControls.opacity) {
-                showControls.start()
-                setMouseCursorVisible(true)
-            }
-
-            afkTimer.restart()
-            videoState === MediaPlayer.PlayingState? mediaPlayer.pause() : mediaPlayer.play()
-        }
-
-        Keys.onLeftPressed: {
-            if (!bottomControls.opacity) {
-                showControls.start()
-                setMouseCursorVisible(true)
-            }
-
-            afkTimer.restart()
-            bottomControls.seekBackward()
-        }
-
-        Keys.onRightPressed: {
-            if (!bottomControls.opacity) {
-                showControls.start()
-                setMouseCursorVisible(true)
-            }
-
-            afkTimer.restart()
-            bottomControls.seekForward()
-        }
-
-        Keys.onPressed: (key) => {
-            if (key.key === Qt.Key_K) {
-                if (!bottomControls.opacity) {
-                    showControls.start()
-                    setMouseCursorVisible(true)
-                }
-                afkTimer.restart()
-
-                if(videoState === MediaPlayer.PlayingState) {
-                    mediaPlayer.pause()
-                } else {
-                    mediaPlayer.play()
-                }
-            }
-        }
-
-
-        MediaDevices {
-            id: mediaDevices
-        }
-
-        AudioOutput {
-            id: audioOutput
-            // Use default output device so it follows the new device in case changed
-            device: mediaDevices.defaultAudioOutput
-            volume: 0.5
-        }
-
-        VideoOutput {
-            id: videoOutput
-            anchors.fill: parent
-            anchors.margins: 3
-
-            fillMode: VideoOutput.Stretch
-            focus: true
-        }
-
-        Timer {
-            id: videoFocusTimer
-            interval: 300
-            repeat: true
-            onTriggered: videoOutput.focus = true
         }
     }
 
     BottomControls {
         id: bottomControls
-        anchors.bottom: mediaPlayerContainer.bottom
-
+        anchors.bottom: parent.bottom
         width: parent.width
         color: "transparent"
+
+        opacity: controlsVisible ? 1 : 0
+        visible: opacity > 0.01
+
+        Behavior on opacity {
+            NumberAnimation { duration: Theme.durBase; easing.type: Theme.easeOut }
+        }
     }
 
     SubtitlePopup {
@@ -294,116 +162,81 @@ ApplicationWindow {
         visible: false
         anchors.bottom: bottomControls.top
         anchors.right: parent.right
+        anchors.rightMargin: Theme.lg
     }
 
     PlayList {
         id: playlist
-        width: 250
-        height: parent.height - bottomControls.height - 20
-        visible: false
-
-        anchors.right: parent.right
+        width: 300
         anchors.top: parent.top
-        anchors.margins: 10
-    }
+        anchors.bottom: bottomControls.top
+        anchors.topMargin: Theme.lg
+        anchors.bottomMargin: Theme.sm
+        anchors.right: parent.right
 
-    ParallelAnimation {
-        id: hideControls
+        // Slides out of frame rather than toggling a bool through an animation.
+        anchors.rightMargin: playlistOpen ? Theme.lg : -width
+        opacity: playlistOpen ? 1 : 0
+        visible: opacity > 0.01
 
-        PropertyAnimation {
-            targets: bottomControls
-            property: "opacity"
-            from: 1
-            to: 0
-            duration: 500
-            easing.type: Easing.InOutQuad
+        Behavior on anchors.rightMargin {
+            NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut }
         }
-        PropertyAnimation {
-            target: bottomControls.bottomOpacityRect
-            property: "opacity"
-            from: 0.40
-            to: 0
-            duration: 500
-            easing.type: Easing.InOutQuad
-        }
-        PropertyAnimation {
-            target: playlist
-            property: "opacity"
-            from: 1
-            to: 0
-            duration: 500
-            easing.type: Easing.InOutQuad
+        Behavior on opacity {
+            NumberAnimation { duration: Theme.durSlow; easing.type: Theme.easeOut }
         }
     }
 
-    ParallelAnimation {
-        id: showControls
-
-        PropertyAnimation {
-            targets: bottomControls
-            property: "opacity"
-            from: 0
-            to: 1
-            duration: 500
-            easing.type: Easing.InOutQuad
-        }
-        PropertyAnimation {
-            target: bottomControls.bottomOpacityRect
-            property: "opacity"
-            from: 0
-            to: 0.40
-            duration: 500
-            easing.type: Easing.InOutQuad
-        }
-        PropertyAnimation {
-            target: playlist
-            property: "opacity"
-            from: 0
-            to: 1
-            duration: 500
-            easing.type: Easing.InOutQuad
-        }
+    Shortcut {
+        sequences: ["Space", "K"]
+        onActivated: { revealControls(); MediaPlayerController.pause_resume() }
     }
-
-    ParallelAnimation {
-        id: showPlayList
-
-        NumberAnimation {
-            target: playlist
-            property: "visible"
-            from: 0
-            to: 1
-            duration: 250
-            easing.type: Easing.InOutQuad
-        }
+    Shortcut {
+        sequence: "Right"
+        onActivated: { revealControls(); MediaPlayerController.seekBy(5000) }
     }
-
-    ParallelAnimation {
-        id: hidePlaylist
-
-        NumberAnimation {
-            target: playlist
-            property: "visible"
-            from: 1
-            to: 0
-            duration: 250
-            easing.type: Easing.InOutQuad
-        }
+    Shortcut {
+        sequence: "Left"
+        onActivated: { revealControls(); MediaPlayerController.seekBy(-5000) }
+    }
+    Shortcut {
+        sequence: "Up"
+        onActivated: { revealControls(); MediaPlayerController.volume = Math.min(MediaPlayerController.maxVolume, MediaPlayerController.volume + 0.05) }
+    }
+    Shortcut {
+        sequence: "Down"
+        onActivated: { revealControls(); MediaPlayerController.volume = Math.max(0, MediaPlayerController.volume - 0.05) }
+    }
+    Shortcut {
+        sequence: "M"
+        onActivated: { revealControls(); MediaPlayerController.muted = !MediaPlayerController.muted }
+    }
+    Shortcut {
+        sequence: "L"
+        onActivated: { revealControls(); VideoController.loop = !VideoController.loop }
+    }
+    Shortcut {
+        sequence: "P"
+        onActivated: { revealControls(); playlistOpen = !playlistOpen }
+    }
+    Shortcut {
+        sequence: "F"
+        onActivated: mainWindow.visibility === Window.FullScreen ? showNormal() : showFullScreen()
+    }
+    Shortcut {
+        sequence: "Esc"
+        onActivated: if (mainWindow.visibility === Window.FullScreen) showNormal()
     }
 
     MetaDataFilterProxyModel {
         id: audioProxyModel
-
         sourceModel: MetaDataModel
-
         filterMetaData: "audio"
     }
 
     MetaDataFilterProxyModel {
         id: subtitleProxyModel
-
         sourceModel: MetaDataModel
-
         filterMetaData: "subtitle"
     }
 }

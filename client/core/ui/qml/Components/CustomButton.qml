@@ -1,88 +1,86 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Controls.Fusion
 import QtQuick.Layouts
 
-import "../controls"
+import "../theme"
 
 Button {
     id: root
 
-    property string backgroundColor: "transparent"
-    property string onHoverBackgroundColor: "darkslategray"
-    property string buttonBorderColor: "transparent"
+    property color backgroundColor: "transparent"
+    property color onHoverBackgroundColor: Theme.hoverOverlay
+    property color buttonBorderColor: "transparent"
+
+    property color iconColor: Theme.textMuted
+    property color iconHoverColor: Theme.text
 
     property double backgroundOpacity: 1
-    property double buttonRadius: width / 2
+    property double buttonRadius: Theme.radiusControl
 
-    property bool isHovered: false
+    property bool isHovered: root.hovered
 
-    property int iconWidth: isMobileTarget? 10 : 18
-    property int iconHeight: isMobileTarget? 10 : 18
-    property string iconSource
+    property int iconWidth: isMobileTarget ? 14 : 18
+    property int iconHeight: isMobileTarget ? 14 : 18
+    property url iconSource
 
-    property int buttonWidth: iconWidth + 10
-    property int buttonHeight: iconHeight + 10
+    property int buttonWidth: Math.max(Theme.hitSize, iconWidth + Theme.lg)
+    property int buttonHeight: Math.max(Theme.hitSize, iconHeight + Theme.lg)
+
+    hoverEnabled: true
+    padding: 0
 
     signal controlHovered(bool hovered)
 
+    onHoveredChanged: controlHovered(hovered)
+
     onControlHovered: (hovered) => {
-        switch (hovered) {
-            case true: afkTimer.stop();
-            break;
-            case false: afkTimer.start();
-            break;
-        }
+        if (hovered)
+            afkTimer.stop();
+        else
+            afkTimer.start();
     }
 
     Layout.minimumWidth: buttonWidth
     Layout.minimumHeight: buttonHeight
+    implicitWidth: buttonWidth
+    implicitHeight: buttonHeight
     width: buttonWidth
     height: buttonHeight
 
-    contentItem: Item {
-        anchors.fill: parent
+    contentItem: AppIcon {
+        source: root.iconSource
+        size: Math.max(root.iconWidth, root.iconHeight)
+        color: root.enabled ? (root.isHovered ? root.iconHoverColor : root.iconColor)
+                            : Theme.textFaint
+        anchors.centerIn: parent
 
-        Image {
-            id: buttonIcon
-            anchors.centerIn: parent
-
-            smooth: true
-            width: iconWidth
-            height: iconHeight
-            source: iconSource
+        scale: root.down ? 0.88 : 1.0
+        Behavior on scale {
+            NumberAnimation { duration: Theme.durFast; easing.type: Theme.easeOut }
         }
     }
 
     background: Rectangle {
-        id: backgroundRec
-        anchors.fill: parent
-        width: parent.width
-        height: parent.height
-
-        MouseArea {
-            id: mouseArea
-            anchors.fill: parent
-            preventStealing: true
-            propagateComposedEvents: false
-            hoverEnabled: true
-            cursorShape: isHovered
-                         ? Qt.PointingHandCursor : Qt.ArrowCursor
-
-            onEntered: {
-                controlHovered(true)
-                isHovered = true
-            }
-            onExited: {
-                controlHovered(false)
-                isHovered = false
-            }
-        }
-
         radius: buttonRadius
         opacity: backgroundOpacity
         border.color: buttonBorderColor
+        border.width: buttonBorderColor === "transparent" ? 0 : 1
 
-        color: root.isHovered? onHoverBackgroundColor : backgroundColor
+        color: root.down ? Theme.pressOverlay
+                         : root.isHovered ? onHoverBackgroundColor
+                                          : backgroundColor
+
+        Behavior on color {
+            ColorAnimation { duration: Theme.durFast }
+        }
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        radius: parent.buttonRadius
+        color: "transparent"
+        border.color: Theme.accent
+        border.width: 2
+        visible: root.visualFocus
     }
 }

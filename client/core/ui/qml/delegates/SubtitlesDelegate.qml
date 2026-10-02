@@ -1,78 +1,43 @@
 import QtQuick
 
-import QtQuick.Layouts
+import "../theme"
 
 Rectangle {
     id: root
-    height: 40
-    color: "transparent"
 
-    Component.onCompleted: root.width = parent.width
+    width: ListView.view ? ListView.view.width : 0
+    height: 34
+    radius: Theme.radiusControl
+    color: hoverHandler.hovered ? Theme.raised : "transparent"
 
     signal metadataSelected()
 
-    MouseArea {
-        anchors.fill: parent
-        hoverEnabled: true
-
-        onEntered: parent.color = "#023020"
-        onExited: parent.color = "transparent"
-        cursorShape: Qt.PointingHandCursor
-
-        onClicked: {
-            metadataSelected()
-
-            if (name === "Off" && type === "subtitle") {
-                mediaPlayer.activeSubtitleTrack = -1
-            } else if (type === "subtitle") {
-                mediaPlayer.activeSubtitleTrack = index - 1 // Substract "Off" index
-            } else {
-                mediaPlayer.activeAudioTrack = index
-            }
-        }
+    Behavior on color {
+        ColorAnimation { duration: Theme.durFast }
     }
 
-    RowLayout {
-        id: contentRow
-        anchors.fill: parent
+    HoverHandler {
+        id: hoverHandler
+        cursorShape: Qt.PointingHandCursor
+    }
 
-        Image {
-            id: currentlySelected
-            Layout.leftMargin: type === "audio" &&
-                               index == mediaPlayer.activeAudioTrack? 15 : 0
+    TapHandler {
+        onTapped: metadataSelected()
+    }
 
-            Component.onCompleted: {
-                if (type === "subtitle" && mediaPlayer.activeSubtitleTrack === index)
-                    visible = rtue
-                else if (type === "audio" && mediaPlayer.activeAudioTrack === index)
-                    visible = true
-            }
+    Text {
+        anchors.left: parent.left
+        anchors.leftMargin: Theme.sm
+        anchors.right: parent.right
+        anchors.rightMargin: Theme.sm
+        anchors.verticalCenter: parent.verticalCenter
 
-            source: "qrc:/ui/icons/svg/selected.svg"
-            Layout.minimumWidth: 20
-            Layout.maximumWidth: 20
+        text: name
+        color: Theme.textMuted
+        elide: Text.ElideRight
 
-            Layout.minimumHeight: 20
-            Layout.maximumHeight: 20
-            smooth: true
-        }
-
-        Text {
-            id: metadataName
-            Layout.minimumWidth: 20
-            Layout.minimumHeight: 20
-
-            text: name
-            color: "#ffffff"
-
-            font.pixelSize: 17
-            font.family: "Poppins"
-            font.weight: Font.Medium
-            font.bold: true
-        }
-
-        Item {
-            Layout.fillWidth: true
-        }
+        font.family: Theme.fontFamily
+        font.pixelSize: Theme.labelSize
+        font.weight: Font.Medium
     }
 }

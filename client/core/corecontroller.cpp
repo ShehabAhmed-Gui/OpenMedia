@@ -7,7 +7,8 @@ CoreController::CoreController(QQmlApplicationEngine *engine,
                                const QSharedPointer<SettingsController> settingsController,
                                const QSharedPointer<SettingsLoader> settingsLoader,
                                const QSharedPointer<FilesManager> filesManager,
-                               const QSharedPointer<VideoManager> videoManager, const QSharedPointer<FolderMonitor> folderMonitor,
+                               const QSharedPointer<VideoManager> videoManager,
+                               const QSharedPointer<FolderMonitor> folderMonitor,
                                QObject *parent)
     : QObject{parent}
     , m_settingsLoader(settingsLoader)
@@ -19,11 +20,12 @@ CoreController::CoreController(QQmlApplicationEngine *engine,
 {
     loadFonts();
 
+    initQmlElements();
     initModels();
     initControllers();
 
-    m_frameProvider.reset(new FrameProvider(m_videoManager));
-    m_engine->addImageProvider("framesprovider", m_frameProvider.get());
+    m_frameProvider = new FrameProvider(m_videoManager);
+    m_engine->addImageProvider("framesprovider", m_frameProvider);
 }
 
 void CoreController::loadFonts()
@@ -66,4 +68,28 @@ void CoreController::initControllers()
 
     m_videoController.reset(new VideoController(m_videoManager, this));
     m_engine->rootContext()->setContextProperty("VideoController", m_videoController.get());
+
+    m_mediaPlayer.reset(new MediaPlayer(m_videoManager, this));
+    m_mediaPlayerController.reset(new MediaPlayerController(m_mediaPlayer, this));
+
+    m_mediaPlayer->setLoop(m_videoController->loop());
+    connect(m_videoController.get(), &VideoController::loopChanged, m_mediaPlayer.get(), [this] {
+        m_mediaPlayer->setLoop(m_videoController->loop());
+    });
+
+    // Register Playback namespace to QML
+    qmlRegisterUncreatableType<Playback>(
+        "com.qt.openmedia",
+        1,
+        0,
+        "Playback",
+        "Playback is a namespace"
+        );
+
+    m_engine->rootContext()->setContextProperty("MediaPlayerController", m_mediaPlayerController.get());
+}
+
+void CoreController::initQmlElements()
+{
+    qmlRegisterType<VideoItem>("com.qt.openmedia", 1, 0, "VideoItem");
 }

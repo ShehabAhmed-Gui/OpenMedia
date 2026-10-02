@@ -1,31 +1,38 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Controls.Fusion
+
+import "../theme"
 
 ToolTip {
     id: root
 
-    visible: parent.hovered? true : false
-
     property string toolTipText: ""
-    property string toolTipBckColor: "black"
+
+    // Long enough that sweeping the pointer across the bar stays quiet.
+    delay: 400
+    visible: parent.hovered && toolTipText.length > 0
+    padding: Theme.sm
 
     background: Rectangle {
-        id: backgroud
-        anchors.fill: parent
-        radius: 5
-        color: toolTipBckColor
+        radius: Theme.radiusControl
+        color: Theme.raised
+        border.color: Theme.hairline
+        border.width: 1
     }
 
     contentItem: Text {
-        anchors.centerIn: backgroud
+        text: root.toolTipText
+        color: Theme.text
 
-        color: "orange"
-        text: qsTr(toolTipText)
-
-        font.family: "Poppins"
-        font.pixelSize: 12
-        font.kerning: true
+        font.family: Theme.fontFamily
+        font.pixelSize: Theme.captionSize
         font.weight: Font.Medium
+    }
+
+    enter: Transition {
+        NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.durFast }
+    }
+    exit: Transition {
+        NumberAnimation { property: "opacity"; from: 1; to: 0; duration: Theme.durFast }
     }
 }

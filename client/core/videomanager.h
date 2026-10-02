@@ -11,36 +11,31 @@
 class VideoManager : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(Loop loopState READ loopState WRITE setLoopState NOTIFY loopStateChanged FINAL)
+    Q_PROPERTY(bool loop READ loop WRITE setLoop NOTIFY loopChanged FINAL)
 
 public:
     explicit VideoManager(QSharedPointer<Settings> settings,
                           QObject *parent = nullptr);
 
-    enum Loop {
-        Disabled = 0,
-        Enabled = 1
-    };
-
     void openMediaFile(QString path);
 
-    Loop loopState() const;
-    void setLoopState(Loop newLoopState);
+    bool loop() const;
+    void setLoop(bool newLoop);
     void setSourceVideo(const QString &path);
-    QImage getVideoFrame(qint64 timestamp);
+    QImage getThumbnailAtTimestamp(qint64 timestamp);
 
 public slots:
     void extractVideoThumbnails(const QString &path);
 
 signals:
-    void loopStateChanged();
+    void loopChanged();
     void frameUpdated(int timestampMs);
     void extractingInProgress();
     void extractedVideoThumbnails();
     void playMediaFile(QString path);
 
 private:
-    Loop m_loopState = Disabled;
+    bool m_loop = false;
     QSharedPointer<Settings> m_settings;
     ThumbnailsExtractor *m_thumbnailsExtractor;
 };
